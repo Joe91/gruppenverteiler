@@ -482,6 +482,28 @@
         </div>
 
         <div class="groups-container" id="groupsContainer"></div>
+
+        <!-- Random Selection Section -->
+        <div style="margin-top: 40px;">
+            <h2>🎯 Zufallsauswahl</h2>
+            <div class="button-group">
+                <button class="btn-primary" id="randomPersonBtn" onclick="selectRandomPerson()" disabled>
+                    👤 Zufällige Person
+                </button>
+                <button class="btn-secondary" id="randomGroupBtn" onclick="selectRandomGroup()" disabled>
+                    👥 Zufällige Gruppe
+                </button>
+            </div>
+
+            <div id="randomResultContainer" style="display: none;">
+                <div
+                    style="background: #f0f8ff; border: 2px solid #667eea; border-radius: 10px; padding: 30px; text-align: center; margin-top: 20px;">
+                    <div style="font-size: 1.2em; color: #666; margin-bottom: 15px; font-weight: 600;">Ergebnis:</div>
+                    <div id="randomResult"
+                        style="font-size: 2.5em; color: #667eea; font-weight: bold; min-height: 60px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -556,6 +578,7 @@
 
                     if (currentData.length > 0) {
                         divideBtn.disabled = false;
+                        document.getElementById('randomPersonBtn').disabled = false;
                         displayPersonList();
                         alert(`✅ ${currentData.length} Zeilen erfolgreich geladen!`);
                     }
@@ -725,6 +748,7 @@
 
             fileName.textContent = `📄 ${name} (gespeichert)`;
             divideBtn.disabled = false;
+            document.getElementById('randomPersonBtn').disabled = false;
             displayPersonList();
             loadSavedLists();
 
@@ -897,6 +921,7 @@
                 }
             }
 
+            document.getElementById('randomGroupBtn').disabled = false;
             displayGroups();
             exportBtn.disabled = false;
 
@@ -982,6 +1007,73 @@
         ignoreFirstRow.addEventListener('change', () => {
             if (currentData.length > 0) displayPersonList();
         });
+
+        // Random selection functions
+        function selectRandomPerson() {
+            const firstNameColIndex = parseInt(nameColumn.value);
+            const lastNameColIndex = parseInt(lastNameColumn.value);
+            const skipFirstRow = ignoreFirstRow.checked;
+
+            let dataToProcess = [...currentData];
+            if (skipFirstRow && dataToProcess.length > 0) {
+                dataToProcess = dataToProcess.slice(1);
+            }
+
+            // Extract active persons (not ignored)
+            const activPersons = [];
+            dataToProcess.forEach((row, index) => {
+                if (!ignoredPersons.has(index)) {
+                    const firstName = row[firstNameColIndex];
+                    const lastName = lastNameColIndex >= 0 ? row[lastNameColIndex] : '';
+
+                    if (firstName && firstName.toString().trim() !== '') {
+                        const firstNameStr = firstName.toString().trim();
+                        const lastNameStr = lastName ? lastName.toString().trim() : '';
+                        const fullName = lastNameStr ? `${firstNameStr} ${lastNameStr}` : firstNameStr;
+                        activPersons.push(fullName);
+                    }
+                }
+            });
+
+            if (activPersons.length === 0) {
+                alert('❌ Keine aktiven Personen verfügbar!');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * activPersons.length);
+            const selectedPerson = activPersons[randomIndex];
+
+            displayRandomResult(selectedPerson);
+        }
+
+        function selectRandomGroup() {
+            if (currentGroups.length === 0) {
+                alert('❌ Bitte erst Gruppen einteilen!');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * currentGroups.length);
+            const selectedGroup = currentGroups[randomIndex];
+
+            const groupText = `Gruppe ${randomIndex + 1}\n${selectedGroup.map(p => p.displayName).join(', ')}`;
+
+            displayRandomResult(groupText, true);
+        }
+
+        function displayRandomResult(result, isGroup = false) {
+            const resultContainer = document.getElementById('randomResultContainer');
+            const resultDiv = document.getElementById('randomResult');
+
+            if (isGroup) {
+                const [groupTitle, members] = result.split('\n');
+                resultDiv.innerHTML = `<div style="text-align: center;"><div style="font-size: 1.5em; margin-bottom: 15px;">${groupTitle}</div><div style="font-size: 1.1em; color: #666;">${members}</div></div>`;
+            } else {
+                resultDiv.textContent = result;
+            }
+
+            resultContainer.style.display = 'block';
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     </script>
 </body>
 

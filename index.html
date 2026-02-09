@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gruppenverteiler - Intelligente Gruppeneinteilung</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #2d5a7b;
@@ -20,9 +23,9 @@
             --text-primary: #2c3e50;
             --text-secondary: #7f8c8d;
             --border: #e1e8ed;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
             --radius: 12px;
             --radius-sm: 8px;
         }
@@ -317,6 +320,7 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -529,6 +533,17 @@
             background: rgba(102, 126, 234, 0.05);
         }
 
+        .saved-list-item.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            font-weight: 600;
+        }
+
+        .saved-list-item.active .saved-list-name::before {
+            content: '● ';
+            color: var(--primary);
+        }
+
         .saved-list-name {
             cursor: pointer;
             flex: 1;
@@ -611,9 +626,11 @@
                 opacity: 0;
                 transform: scale(0.8);
             }
+
             50% {
                 transform: scale(1.05);
             }
+
             100% {
                 opacity: 1;
                 transform: scale(1);
@@ -678,10 +695,13 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -696,10 +716,11 @@
         <!-- Quick Start Help -->
         <div class="help-section">
             <div class="help-title">🚀 Schnellstart</div>
-            <p>1. <strong>Datei hochladen</strong> (Excel/CSV mit Vornamen in Spalte A) oder Beispieldatei herunterladen<br>
-            2. <strong>Personen prüfen</strong> und bei Bedarf einzelne ausschließen<br>
-            3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
-            4. <strong>Gruppen einteilen</strong> und als Excel exportieren</p>
+            <p>1. <strong>Datei hochladen</strong> (Excel/CSV mit Vornamen in Spalte A) oder Beispieldatei
+                herunterladen<br>
+                2. <strong>Personen prüfen</strong> und bei Bedarf einzelne ausschließen<br>
+                3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
+                4. <strong>Gruppen einteilen</strong> und als Excel exportieren</p>
         </div>
 
         <!-- Upload Section -->
@@ -708,14 +729,14 @@
                 <span class="card-icon">📁</span>
                 <h2>Datei hochladen</h2>
             </div>
-            
+
             <div class="upload-area" id="uploadArea">
                 <span class="upload-icon">⬆️</span>
                 <div class="upload-text">Datei hier ablegen oder klicken</div>
                 <div class="upload-hint">Excel (.xlsx, .xls) oder CSV-Dateien</div>
                 <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
             </div>
-            
+
             <a href="#" id="downloadExample" class="example-download">
                 📥 Beispiel-Datei herunterladen
             </a>
@@ -736,7 +757,7 @@
                 <span><strong>⚙️ Spalten-Einstellungen</strong> (bei Bedarf anpassen)</span>
                 <span id="toggleIcon">▼</span>
             </div>
-            
+
             <div class="settings-content" id="settingsContent">
                 <div class="grid-2">
                     <div class="form-group">
@@ -744,7 +765,7 @@
                         <input type="number" id="colFirstName" class="form-input" value="0" min="0">
                         <span class="form-hint">Spalte A = 0, Spalte B = 1, etc.</span>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Spalte: Nachname</label>
                         <input type="number" id="colLastName" class="form-input" value="-1" min="-1">
@@ -795,7 +816,7 @@
                 <span class="card-icon">👥</span>
                 <h2>Personen auswählen</h2>
             </div>
-            
+
             <div class="person-stats">
                 <div class="stat-item">
                     <div class="stat-value" id="totalCount">0</div>
@@ -812,7 +833,7 @@
             </div>
 
             <div id="personList" class="person-grid"></div>
-            
+
             <div class="action-buttons" style="margin-top: 20px;">
                 <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
             </div>
@@ -842,7 +863,7 @@
 
                 <div class="form-group">
                     <label class="form-label" id="valueLabel">Anzahl Gruppen</label>
-                    <input type="number" id="distributionValue" class="form-input" value="3" min="1">
+                    <input type="number" id="distributionValue" class="form-input" value="6" min="1">
                 </div>
             </div>
 
@@ -948,7 +969,7 @@
             toast.className = 'toast ' + type;
             toastIcon.textContent = icons[type] || icons.success;
             toastMessage.textContent = message;
-            
+
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -958,10 +979,32 @@
         // Save state to localStorage
         function saveState() {
             try {
+                // If we have an active list, save to that list
+                if (currentListName) {
+                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+                    if (lists[currentListName]) {
+                        lists[currentListName] = {
+                            people: people,
+                            groups: groups,
+                            settings: {
+                                colFirstName: document.getElementById('colFirstName').value,
+                                colLastName: document.getElementById('colLastName').value,
+                                colExclusions: document.getElementById('colExclusions').value,
+                                skipFirstRow: document.getElementById('skipFirstRow').checked,
+                                mode: document.querySelector('input[name="mode"]:checked').value,
+                                distributionValue: document.getElementById('distributionValue').value,
+                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                            }
+                        };
+                        localStorage.setItem('savedLists', JSON.stringify(lists));
+                    }
+                }
+
+                // Also save to generic storage for backwards compatibility and temp work
                 localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
                 localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
                 localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
-                
+
                 const settings = {
                     colFirstName: document.getElementById('colFirstName').value,
                     colLastName: document.getElementById('colLastName').value,
@@ -980,7 +1023,19 @@
         // Load state from localStorage
         function loadState() {
             try {
-                // Load people
+                // Check if there was an active list
+                const savedListName = localStorage.getItem('currentListName');
+
+                if (savedListName) {
+                    // Load the active list
+                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+                    if (lists[savedListName]) {
+                        loadList(savedListName);
+                        return;
+                    }
+                }
+
+                // Fallback: Try to load from old generic storage (for backwards compatibility)
                 const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
                 if (savedPeople) {
                     people = JSON.parse(savedPeople);
@@ -993,7 +1048,6 @@
                     }
                 }
 
-                // Load groups
                 const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
                 if (savedGroups) {
                     groups = JSON.parse(savedGroups);
@@ -1004,13 +1058,6 @@
                     }
                 }
 
-                // Load current list name
-                const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
-                if (savedListName) {
-                    currentListName = savedListName;
-                }
-
-                // Load settings
                 const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
@@ -1018,18 +1065,18 @@
                     document.getElementById('colLastName').value = settings.colLastName || -1;
                     document.getElementById('colExclusions').value = settings.colExclusions || 1;
                     document.getElementById('skipFirstRow').checked = settings.skipFirstRow !== false;
-                    
+
                     if (settings.mode) {
                         document.querySelector(`input[name="mode"][value="${settings.mode}"]`).checked = true;
                         const isSize = settings.mode === 'size';
                         document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
                         document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
                     }
-                    
+
                     if (settings.distributionValue) {
                         document.getElementById('distributionValue').value = settings.distributionValue;
                     }
-                    
+
                     if (settings.restMode) {
                         document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
                     }
@@ -1041,7 +1088,7 @@
 
         // Upload handling
         uploadArea.addEventListener('click', () => fileInput.click());
-        
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -1110,7 +1157,7 @@
             if (activeCount && size) {
                 const numGroups = Math.floor(activeCount / size);
                 const rest = activeCount % size;
-                
+
                 if (rest === 0) {
                     hint.textContent = `${activeCount} Personen → ${numGroups} Gruppen à ${size} Personen`;
                 } else if (restMode === 'distribute') {
@@ -1124,27 +1171,27 @@
         // Handle file upload
         function handleFile(file) {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
+
                     parseData(rows);
-                    
+
                     document.getElementById('filePreview').style.display = 'block';
                     document.getElementById('fileName').textContent = file.name;
-                    document.getElementById('fileStats').textContent = 
+                    document.getElementById('fileStats').textContent =
                         `${rows.length} Zeilen, ${rows[0]?.length || 0} Spalten`;
-                    
+
                     showToast('Datei erfolgreich geladen!');
                 } catch (error) {
                     showToast('Fehler beim Laden der Datei: ' + error.message, 'error');
                 }
             };
-            
+
             reader.readAsArrayBuffer(file);
         }
 
@@ -1156,6 +1203,8 @@
             const skipFirst = document.getElementById('skipFirstRow').checked;
 
             people = [];
+            groups = []; // Clear groups when new file is loaded
+            currentListName = ''; // Clear current list name
             const startRow = skipFirst ? 1 : 0;
 
             for (let i = startRow; i < rows.length; i++) {
@@ -1164,7 +1213,7 @@
 
                 const firstName = row[colFirst].toString().trim();
                 const lastName = colLast >= 0 && row[colLast] ? row[colLast].toString().trim() : '';
-                const exclusions = colExcl >= 0 && row[colExcl] ? 
+                const exclusions = colExcl >= 0 && row[colExcl] ?
                     row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e) : [];
 
                 people.push({
@@ -1180,17 +1229,19 @@
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
             saveListCard.style.display = 'block';
+            groupsCard.style.display = 'none'; // Hide groups card
             updateStats();
             saveState();
+            loadSavedLists(); // Refresh to clear active state
         }
 
         // Render person list
         function renderPersonList() {
             personList.innerHTML = people.map((person, index) => {
-                const name = person.lastName ? 
-                    `${person.firstName} ${person.lastName.substring(0, 3)}.` : 
+                const name = person.lastName ?
+                    `${person.firstName} ${person.lastName.substring(0, 3)}.` :
                     person.firstName;
-                
+
                 return `
                     <div class="person-item ${person.ignored ? 'ignored' : ''}" data-index="${index}">
                         <input type="checkbox" class="person-checkbox" 
@@ -1235,7 +1286,7 @@
         // Distribute groups
         document.getElementById('distributeBtn').addEventListener('click', () => {
             const activePeople = people.filter(p => !p.ignored);
-            
+
             if (activePeople.length === 0) {
                 showToast('Keine aktiven Personen zum Verteilen!', 'warning');
                 return;
@@ -1243,7 +1294,7 @@
 
             const mode = document.querySelector('input[name="mode"]:checked').value;
             const value = parseInt(document.getElementById('distributionValue').value);
-            
+
             if (mode === 'groups') {
                 distributeByGroupCount(activePeople, value);
             } else {
@@ -1262,7 +1313,7 @@
         function distributeByGroupCount(people, numGroups) {
             const shuffled = [...people].sort(() => Math.random() - 0.5);
             groups = Array.from({ length: numGroups }, () => []);
-            
+
             shuffled.forEach((person, index) => {
                 groups[index % numGroups].push(person);
             });
@@ -1272,11 +1323,11 @@
         function distributeByGroupSize(people, size, restMode) {
             const shuffled = [...people].sort(() => Math.random() - 0.5);
             groups = [];
-            
+
             if (restMode === 'distribute') {
                 const numGroups = Math.ceil(shuffled.length / size);
                 groups = Array.from({ length: numGroups }, () => []);
-                
+
                 shuffled.forEach((person, index) => {
                     groups[index % numGroups].push(person);
                 });
@@ -1292,8 +1343,8 @@
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
                 const members = group.map(p => {
-                    const name = p.lastName ? 
-                        `${p.firstName} ${p.lastName.substring(0, 3)}.` : 
+                    const name = p.lastName ?
+                        `${p.firstName} ${p.lastName.substring(0, 3)}.` :
                         p.firstName;
                     return `<div class="group-member">${name}</div>`;
                 }).join('');
@@ -1311,16 +1362,16 @@
         document.getElementById('exportBtn').addEventListener('click', () => {
             const ws_data = [];
             const maxLength = Math.max(...groups.map(g => g.length));
-            
+
             // Header
             ws_data.push(groups.map((_, i) => `Gruppe ${i + 1}`));
-            
+
             // Data
             for (let i = 0; i < maxLength; i++) {
                 ws_data.push(groups.map(g => {
                     if (g[i]) {
-                        return g[i].lastName ? 
-                            `${g[i].firstName} ${g[i].lastName}` : 
+                        return g[i].lastName ?
+                            `${g[i].firstName} ${g[i].lastName}` :
                             g[i].firstName;
                     }
                     return '';
@@ -1330,12 +1381,12 @@
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Gruppen");
-            
+
             const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-            const filename = currentListName ? 
+            const filename = currentListName ?
                 `Gruppeneinteilung_${currentListName}_${timestamp}.xlsx` :
                 `Gruppeneinteilung_${timestamp}.xlsx`;
-            
+
             XLSX.writeFile(wb, filename);
             showToast('Excel-Datei wurde heruntergeladen!');
         });
@@ -1360,10 +1411,10 @@
             }
 
             const randomPerson = activePeople[Math.floor(Math.random() * activePeople.length)];
-            const name = randomPerson.lastName ? 
-                `${randomPerson.firstName} ${randomPerson.lastName}` : 
+            const name = randomPerson.lastName ?
+                `${randomPerson.firstName} ${randomPerson.lastName}` :
                 randomPerson.firstName;
-            
+
             const result = document.getElementById('randomResult');
             result.textContent = `👤 ${name}`;
             result.classList.remove('show');
@@ -1397,17 +1448,25 @@
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             lists[name] = {
                 people: people,
+                groups: groups,
                 settings: {
                     colFirstName: document.getElementById('colFirstName').value,
                     colLastName: document.getElementById('colLastName').value,
                     colExclusions: document.getElementById('colExclusions').value,
-                    skipFirstRow: document.getElementById('skipFirstRow').checked
+                    skipFirstRow: document.getElementById('skipFirstRow').checked,
+                    mode: document.querySelector('input[name="mode"]:checked').value,
+                    distributionValue: document.getElementById('distributionValue').value,
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
                 }
             };
 
             localStorage.setItem('savedLists', JSON.stringify(lists));
             currentListName = name;
             document.getElementById('listName').value = '';
+
+            // Save current list name separately
+            localStorage.setItem('currentListName', name);
+
             loadSavedLists();
             showToast(`Liste "${name}" gespeichert!`);
         });
@@ -1416,43 +1475,85 @@
         function loadSavedLists() {
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const container = document.getElementById('savedListsContainer');
-            
+
             if (Object.keys(lists).length === 0) {
                 savedListsCard.style.display = 'none';
                 return;
             }
 
             savedListsCard.style.display = 'block';
-            container.innerHTML = Object.keys(lists).map(name => `
-                <div class="saved-list-item">
-                    <span class="saved-list-name" onclick="loadList('${name}')">${name}</span>
-                    <button class="delete-list-btn" onclick="deleteList('${name}')">🗑️</button>
-                </div>
-            `).join('');
+            container.innerHTML = Object.keys(lists).map(name => {
+                const isActive = name === currentListName;
+                return `
+                    <div class="saved-list-item ${isActive ? 'active' : ''}">
+                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">${name}</span>
+                        <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Load specific list
         function loadList(name) {
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const list = lists[name];
-            
+
             if (!list) return;
 
-            people = list.people;
+            // Load people
+            people = list.people || [];
             currentListName = name;
-            
-            // Apply settings
-            document.getElementById('colFirstName').value = list.settings.colFirstName;
-            document.getElementById('colLastName').value = list.settings.colLastName;
-            document.getElementById('colExclusions').value = list.settings.colExclusions;
-            document.getElementById('skipFirstRow').checked = list.settings.skipFirstRow;
 
+            // Load groups if available
+            groups = list.groups || [];
+
+            // Apply settings (with backwards compatibility for old format)
+            if (list.settings) {
+                document.getElementById('colFirstName').value = list.settings.colFirstName || 0;
+                document.getElementById('colLastName').value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
+                document.getElementById('colExclusions').value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
+                document.getElementById('skipFirstRow').checked = list.settings.skipFirstRow !== false;
+
+                // New settings (may not exist in old saves)
+                if (list.settings.mode) {
+                    document.querySelector(`input[name="mode"][value="${list.settings.mode}"]`).checked = true;
+                    const isSize = list.settings.mode === 'size';
+                    document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                    document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                }
+
+                if (list.settings.distributionValue) {
+                    document.getElementById('distributionValue').value = list.settings.distributionValue;
+                }
+
+                if (list.settings.restMode) {
+                    document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`).checked = true;
+                }
+            }
+
+            // Update UI
             renderPersonList();
             personListCard.style.display = 'block';
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
             saveListCard.style.display = 'block';
-            
+
+            // Show groups if available
+            if (groups.length > 0) {
+                renderGroups();
+                groupsCard.style.display = 'block';
+                document.getElementById('randomGroupBtn').disabled = false;
+            } else {
+                groupsCard.style.display = 'none';
+                document.getElementById('randomGroupBtn').disabled = true;
+            }
+
+            // Save as current list
+            localStorage.setItem('currentListName', name);
+
+            // Refresh list display to show active state
+            loadSavedLists();
+
             showToast(`Liste "${name}" geladen!`);
         }
 
@@ -1463,11 +1564,11 @@
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             delete lists[name];
             localStorage.setItem('savedLists', JSON.stringify(lists));
-            
+
             if (currentListName === name) {
                 currentListName = '';
             }
-            
+
             loadSavedLists();
             showToast(`Liste "${name}" gelöscht`);
         }
@@ -1475,7 +1576,7 @@
         // Download example file
         document.getElementById('downloadExample').addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             const exampleData = [
                 ['Vorname', 'Ausschlüsse', 'Nachname'],
                 ['Max', 'Anna, Peter', 'Müller'],
@@ -1492,7 +1593,7 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Beispiel");
             XLSX.writeFile(wb, "Beispiel-Gruppenliste.xlsx");
-            
+
             showToast('Beispiel-Datei wurde heruntergeladen!');
         });
 
@@ -1501,4 +1602,5 @@
         loadState();
     </script>
 </body>
+
 </html>

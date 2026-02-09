@@ -812,6 +812,10 @@
             </div>
 
             <div id="personList" class="person-grid"></div>
+            
+            <div class="action-buttons" style="margin-top: 20px;">
+                <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
+            </div>
         </div>
 
         <!-- Distribution Settings -->
@@ -907,6 +911,15 @@
         let groups = [];
         let currentListName = '';
 
+        // LocalStorage keys
+        const STORAGE_KEYS = {
+            PEOPLE: 'gruppenverteiler_people',
+            GROUPS: 'gruppenverteiler_groups',
+            SETTINGS: 'gruppenverteiler_settings',
+            IGNORED: 'gruppenverteiler_ignored',
+            CURRENT_LIST: 'gruppenverteiler_currentList'
+        };
+
         // DOM Elements
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -940,6 +953,90 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
+                localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+                localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
+                
+                const settings = {
+                    colFirstName: document.getElementById('colFirstName').value,
+                    colLastName: document.getElementById('colLastName').value,
+                    colExclusions: document.getElementById('colExclusions').value,
+                    skipFirstRow: document.getElementById('skipFirstRow').checked,
+                    mode: document.querySelector('input[name="mode"]:checked').value,
+                    distributionValue: document.getElementById('distributionValue').value,
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                };
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+            } catch (e) {
+                console.error('Error saving state:', e);
+            }
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                // Load people
+                const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
+                if (savedPeople) {
+                    people = JSON.parse(savedPeople);
+                    if (people.length > 0) {
+                        renderPersonList();
+                        personListCard.style.display = 'block';
+                        distributionCard.style.display = 'block';
+                        randomCard.style.display = 'block';
+                        saveListCard.style.display = 'block';
+                    }
+                }
+
+                // Load groups
+                const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
+                if (savedGroups) {
+                    groups = JSON.parse(savedGroups);
+                    if (groups.length > 0) {
+                        renderGroups();
+                        groupsCard.style.display = 'block';
+                        document.getElementById('randomGroupBtn').disabled = false;
+                    }
+                }
+
+                // Load current list name
+                const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
+                if (savedListName) {
+                    currentListName = savedListName;
+                }
+
+                // Load settings
+                const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    document.getElementById('colFirstName').value = settings.colFirstName || 0;
+                    document.getElementById('colLastName').value = settings.colLastName || -1;
+                    document.getElementById('colExclusions').value = settings.colExclusions || 1;
+                    document.getElementById('skipFirstRow').checked = settings.skipFirstRow !== false;
+                    
+                    if (settings.mode) {
+                        document.querySelector(`input[name="mode"][value="${settings.mode}"]`).checked = true;
+                        const isSize = settings.mode === 'size';
+                        document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                        document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                    }
+                    
+                    if (settings.distributionValue) {
+                        document.getElementById('distributionValue').value = settings.distributionValue;
+                    }
+                    
+                    if (settings.restMode) {
+                        document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading state:', e);
+            }
         }
 
         // Upload handling
@@ -983,11 +1080,25 @@
                 document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
                 document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
                 updateRestModeHint();
+                saveState();
             });
         });
 
         document.querySelectorAll('input[name="restMode"]').forEach(radio => {
-            radio.addEventListener('change', updateRestModeHint);
+            radio.addEventListener('change', () => {
+                updateRestModeHint();
+                saveState();
+            });
+        });
+
+        // Save settings on change
+        document.getElementById('colFirstName').addEventListener('change', saveState);
+        document.getElementById('colLastName').addEventListener('change', saveState);
+        document.getElementById('colExclusions').addEventListener('change', saveState);
+        document.getElementById('skipFirstRow').addEventListener('change', saveState);
+        document.getElementById('distributionValue').addEventListener('change', () => {
+            updateRestModeHint();
+            saveState();
         });
 
         function updateRestModeHint() {
@@ -1070,6 +1181,7 @@
             randomCard.style.display = 'block';
             saveListCard.style.display = 'block';
             updateStats();
+            saveState();
         }
 
         // Render person list
@@ -1097,6 +1209,7 @@
             people[index].ignored = !people[index].ignored;
             renderPersonList();
             updateRestModeHint();
+            saveState();
         }
 
         // Update stats
@@ -1109,6 +1222,15 @@
             document.getElementById('activeCount').textContent = active;
             document.getElementById('ignoredCount').textContent = ignored;
         }
+
+        // Reset ignore list
+        document.getElementById('resetIgnoreBtn').addEventListener('click', () => {
+            people.forEach(p => p.ignored = false);
+            renderPersonList();
+            updateRestModeHint();
+            saveState();
+            showToast('Alle Personen wurden aktiviert');
+        });
 
         // Distribute groups
         document.getElementById('distributeBtn').addEventListener('click', () => {
@@ -1132,6 +1254,7 @@
             renderGroups();
             groupsCard.style.display = 'block';
             document.getElementById('randomGroupBtn').disabled = false;
+            saveState();
             showToast('Gruppen erfolgreich eingeteilt!');
         });
 
@@ -1223,6 +1346,7 @@
                 groups = [];
                 groupsCard.style.display = 'none';
                 document.getElementById('randomGroupBtn').disabled = true;
+                saveState();
                 showToast('Gruppeneinteilung gelöscht');
             }
         });
@@ -1374,6 +1498,7 @@
 
         // Initialize
         loadSavedLists();
+        loadState();
     </script>
 </body>
 </html>

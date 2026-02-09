@@ -297,6 +297,18 @@
             box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
         }
 
+        .btn-subtle {
+            background: #6c757d;
+            color: white;
+            font-size: 14px;
+        }
+
+        .btn-subtle:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
+        }
+
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
@@ -421,18 +433,13 @@
         <!-- Person List with Ignore Option -->
         <div id="personListSection" style="display: none;">
             <h2>👥 Personen (klicken zum Ignorieren)</h2>
-            <div class="stats-info" id="statsInfo"></div>
+            <div class="stats-info" id="statsInfo" style="margin-bottom: 20px;"></div>
             <div class="person-list" id="personList"></div>
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button class="btn-secondary" onclick="resetIgnoredPersons()" style="flex: 1;" id="resetIgnoredBtn">
-                    🔄 Ignorierte zurücksetzen
-                </button>
-            </div>
         </div>
 
         <!-- Parse Settings Toggle -->
         <div style="margin-bottom: 20px;">
-            <button class="btn-secondary" onclick="toggleParseSettings()" style="width: 100%;">
+            <button class="btn-subtle" onclick="toggleParseSettings()" style="width: 100%;">
                 ⚙️ Parse-Einstellungen anzeigen
             </button>
         </div>
@@ -472,7 +479,7 @@
 
             <div class="control-group">
                 <label for="groupValue">Wert</label>
-                <input type="number" id="groupValue" value="3" min="1">
+                <input type="number" id="groupValue" value="6" min="1">
             </div>
 
             <div class="control-group">
@@ -583,6 +590,17 @@
         function processFile(file) {
             fileName.textContent = `📄 ${file.name}`;
 
+            // Reset list context when loading a new file
+            currentListName = null;
+            currentGroups = [];
+            groupsContainer.innerHTML = '';
+            exportBtn.disabled = true;
+            document.getElementById('deleteGroupsBtn').disabled = true;
+            document.getElementById('randomGroupBtn').disabled = true;
+
+            // Update saved lists UI to deselect any active list
+            loadSavedLists();
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
@@ -681,7 +699,21 @@
 
         function updateStatsInfo(totalPersons) {
             const activePersons = totalPersons - ignoredPersons.size;
-            statsInfo.textContent = `📊 Gesamt: ${totalPersons} | Aktiv: ${activePersons} | Ignoriert: ${ignoredPersons.size}`;
+            let statsText = `📊 Gesamt: ${totalPersons} | Aktiv: ${activePersons}`;
+
+            statsInfo.innerHTML = '';
+            statsInfo.textContent = statsText + ' | Ignoriert: ' + ignoredPersons.size;
+
+            if (ignoredPersons.size > 0) {
+                const resetIcon = document.createElement('span');
+                resetIcon.textContent = ' 🔄';
+                resetIcon.style.cursor = 'pointer';
+                resetIcon.style.marginLeft = '8px';
+                resetIcon.style.fontSize = '1.3em';
+                resetIcon.title = 'Klicken zum Zurücksetzen';
+                resetIcon.onclick = resetIgnoredPersons;
+                statsInfo.appendChild(resetIcon);
+            }
         }
 
         function saveCurrentSettings() {
@@ -887,6 +919,13 @@
             currentData = listData.data;
             ignoredPersons = new Set(listData.ignoredPersons || []);
             currentListName = name;
+
+            // Setze Gruppen zurück, bevor neue Liste geladen wird
+            currentGroups = [];
+            groupsContainer.innerHTML = '';
+            exportBtn.disabled = true;
+            document.getElementById('deleteGroupsBtn').disabled = true;
+            document.getElementById('randomGroupBtn').disabled = true;
 
             // Lade gespeicherte Einstellungen
             if (listData.settings) {
@@ -1204,6 +1243,12 @@
             }
             ignoredPersons.clear();
             displayPersonList();
+
+            // Speichere den geänderten Zustand
+            saveLastDistribution();
+            if (currentListName) {
+                updateLoadedList();
+            }
         }
 
         // Delete current distribution

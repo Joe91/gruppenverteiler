@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gruppenverteiler - Intelligente Gruppeneinteilung</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --primary: #2d5a7b;
@@ -20,9 +23,9 @@
             --text-primary: #2c3e50;
             --text-secondary: #7f8c8d;
             --border: #e1e8ed;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
             --radius: 12px;
             --radius-sm: 8px;
         }
@@ -317,6 +320,7 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -622,9 +626,11 @@
                 opacity: 0;
                 transform: scale(0.8);
             }
+
             50% {
                 transform: scale(1.05);
             }
+
             100% {
                 opacity: 1;
                 transform: scale(1);
@@ -689,9 +695,17 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+            0% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.7;
+            }
         }
 
         /* Responsive */
@@ -726,10 +740,13 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -744,10 +761,11 @@
         <!-- Quick Start Help -->
         <div class="help-section">
             <div class="help-title">🚀 Schnellstart</div>
-            <p>1. <strong>Datei hochladen</strong> (Excel/CSV mit Vornamen in Spalte A) oder Beispieldatei herunterladen<br>
-            2. <strong>Personen prüfen</strong> und bei Bedarf einzelne ausschließen<br>
-            3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
-            4. <strong>Gruppen einteilen</strong> und als Excel exportieren</p>
+            <p>1. <strong>Datei hochladen</strong> (Excel/CSV mit Vornamen in Spalte A) oder Beispieldatei
+                herunterladen<br>
+                2. <strong>Personen prüfen</strong> und bei Bedarf einzelne ausschließen<br>
+                3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
+                4. <strong>Gruppen einteilen</strong> und als Excel exportieren</p>
         </div>
 
         <!-- Upload Section -->
@@ -756,14 +774,14 @@
                 <span class="card-icon">📁</span>
                 <h2>Datei hochladen</h2>
             </div>
-            
+
             <div class="upload-area" id="uploadArea">
                 <span class="upload-icon">⬆️</span>
                 <div class="upload-text">Datei hier ablegen oder klicken</div>
                 <div class="upload-hint">Excel (.xlsx, .xls) oder CSV-Dateien</div>
                 <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
             </div>
-            
+
             <a href="#" id="downloadExample" class="example-download">
                 📥 Beispiel-Datei herunterladen
             </a>
@@ -784,7 +802,7 @@
                 <span><strong>⚙️ Spalten-Einstellungen</strong> (bei Bedarf anpassen)</span>
                 <span id="toggleIcon">▼</span>
             </div>
-            
+
             <div class="settings-content" id="settingsContent">
                 <div class="grid-2">
                     <div class="form-group">
@@ -792,7 +810,7 @@
                         <input type="number" id="colFirstName" class="form-input" value="0" min="0">
                         <span class="form-hint">Spalte A = 0, Spalte B = 1, etc.</span>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Spalte: Nachname</label>
                         <input type="number" id="colLastName" class="form-input" value="-1" min="-1">
@@ -820,7 +838,8 @@
             <div class="card-header">
                 <span class="card-icon">💾</span>
                 <h2>Gespeicherte Listen</h2>
-                <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.9rem;" onclick="clearCurrentList()">
+                <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.9rem;"
+                    onclick="clearCurrentList()">
                     🗑️ Aktuelle Liste löschen
                 </button>
             </div>
@@ -847,9 +866,10 @@
         <div class="card" id="personListCard" style="display: none;">
             <div class="card-header">
                 <span class="card-icon">👥</span>
-                <h2>Personen auswählen <span id="conflictBadge" class="conflict-badge" style="display: none;">Konflikte</span></h2>
+                <h2>Personen ignorieren <span id="conflictBadge" class="conflict-badge"
+                        style="display: none;">Konflikte</span></h2>
             </div>
-            
+
             <div class="person-stats">
                 <div class="stat-item">
                     <div class="stat-value" id="totalCount">0</div>
@@ -870,7 +890,7 @@
             </div>
 
             <div id="personList" class="person-grid"></div>
-            
+
             <div class="action-buttons" style="margin-top: 20px;">
                 <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
                 <button class="btn btn-secondary" id="analyzeConflictsBtn">🔍 Konflikte analysieren</button>
@@ -920,18 +940,6 @@
                 <span class="form-hint" id="restModeHint"></span>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Algorithmus-Einstellungen</label>
-                <div class="checkbox-group" style="margin-bottom: 8px;">
-                    <input type="checkbox" id="optimizeForSpeed" checked>
-                    <span>Für Geschwindigkeit optimieren</span>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="prioritizeNoConflicts" checked>
-                    <span>Konfliktfreie Gruppen priorisieren</span>
-                </div>
-            </div>
-
             <div class="action-buttons">
                 <button class="btn btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
                 <div class="progress-bar" id="distributionProgress">
@@ -945,14 +953,14 @@
             <div class="card-header">
                 <span class="card-icon">🎯</span>
                 <h2>Gruppeneinteilung</h2>
-                <span id="conflictSummary" style="margin-left: auto; font-size: 0.9rem; color: var(--text-secondary);"></span>
+                <span id="conflictSummary"
+                    style="margin-left: auto; font-size: 0.9rem; color: var(--text-secondary);"></span>
             </div>
 
             <div id="groupsContainer" class="groups-container"></div>
 
             <div class="action-buttons">
                 <button class="btn btn-success" id="exportBtn">💾 Als Excel exportieren</button>
-                <button class="btn btn-secondary" id="shuffleGroupsBtn">🔀 Gruppen neu mischen</button>
                 <button class="btn btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
             </div>
         </div>
@@ -1030,7 +1038,7 @@
             toast.className = 'toast ' + type;
             toastIcon.textContent = icons[type] || icons.success;
             toastMessage.textContent = message;
-            
+
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -1084,8 +1092,8 @@
 
         // Count conflicts in a group
         function countConflicts(group, person, firstNameCount) {
-            return group.filter(member => 
-                checkExclusion(person, member, firstNameCount) || 
+            return group.filter(member =>
+                checkExclusion(person, member, firstNameCount) ||
                 checkExclusion(member, person, firstNameCount)
             ).length;
         }
@@ -1093,7 +1101,7 @@
         // Calculate total conflicts
         function calculateTotalConflicts(groups, firstNameCount) {
             return groups.reduce((sum, group) => {
-                return sum + group.reduce((groupSum, person) => 
+                return sum + group.reduce((groupSum, person) =>
                     groupSum + countConflicts(group, person, firstNameCount), 0
                 );
             }, 0) / 2; // Divide by 2 because each conflict is counted twice
@@ -1137,11 +1145,11 @@
         // Adaptive backtracking algorithm (from index.html)
         function assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, onProgress = null) {
             const startTime = performance.now();
-            const maxTime = document.getElementById('optimizeForSpeed').checked ? 500 : 1000;
+            const maxTime = 700; // Feste Zeit: 0,7 Sekunden
             const minAttempts = 3;
-            const maxAttempts = document.getElementById('optimizeForSpeed').checked ? 50 : 200;
-            const maxNoImprovement = 100;
-            const prioritizeNoConflicts = document.getElementById('prioritizeNoConflicts').checked;
+            const maxAttempts = 1000; // Feste Anzahl: 1000 Versuche
+            const maxNoImprovement = 800;
+            const prioritizeNoConflicts = false; // Immer false
 
             let bestSolution = null;
             let minTotalConflicts = Infinity;
@@ -1228,13 +1236,13 @@
             activePeople.forEach((person, i) => {
                 activePeople.forEach((other, j) => {
                     if (i < j) {
-                        if (checkExclusion(person, other, firstNameCount) || 
+                        if (checkExclusion(person, other, firstNameCount) ||
                             checkExclusion(other, person, firstNameCount)) {
                             totalConflicts++;
                             conflictPairs.push({
                                 person1: person.displayName,
                                 person2: other.displayName,
-                                reason: person.exclusions.includes(other.displayName) ? 
+                                reason: person.exclusions.includes(other.displayName) ?
                                     `${person.displayName} schließt ${other.displayName} aus` :
                                     `${other.displayName} schließt ${person.displayName} aus`
                             });
@@ -1260,7 +1268,7 @@
                 conflictBadge.style.display = 'inline-block';
                 conflictBadge.textContent = `${conflictAnalysis.totalConflicts} Konflikt(e)`;
                 conflictCount.textContent = conflictAnalysis.totalConflicts;
-                
+
                 // Show warning in groups card if conflicts exist
                 const conflictSummary = document.getElementById('conflictSummary');
                 if (conflictSummary) {
@@ -1270,7 +1278,7 @@
             } else {
                 conflictBadge.style.display = 'none';
                 conflictCount.textContent = '0';
-                
+
                 const conflictSummary = document.getElementById('conflictSummary');
                 if (conflictSummary) {
                     conflictSummary.textContent = '✓ Keine Konflikte';
@@ -1289,10 +1297,10 @@
                     localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
                     localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
                 }
-                
+
                 // Always save current list name
                 localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
-                
+
                 const settings = {
                     colFirstName: document.getElementById('colFirstName').value,
                     colLastName: document.getElementById('colLastName').value,
@@ -1300,12 +1308,10 @@
                     skipFirstRow: document.getElementById('skipFirstRow').checked,
                     mode: document.querySelector('input[name="mode"]:checked').value,
                     distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value,
-                    optimizeForSpeed: document.getElementById('optimizeForSpeed').checked,
-                    prioritizeNoConflicts: document.getElementById('prioritizeNoConflicts').checked
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
                 };
                 localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-                
+
                 // If we have an active list, also save to that list (but only if not currently loading)
                 if (currentListName && !isLoadingList) {
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
@@ -1316,7 +1322,7 @@
                         timestamp: new Date().toISOString()
                     };
                     localStorage.setItem('savedLists', JSON.stringify(lists));
-                    
+
                     // Show saving animation
                     const progressBar = document.getElementById('saveProgress');
                     const progressFill = progressBar.querySelector('.progress-fill');
@@ -1339,7 +1345,7 @@
             try {
                 // Check if there was an active list
                 const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
-                
+
                 if (savedListName) {
                     // Load the active list
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
@@ -1348,7 +1354,7 @@
                         return;
                     }
                 }
-                
+
                 // Fallback: Try to load from old generic storage (for backwards compatibility)
                 const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
                 if (savedPeople) {
@@ -1381,28 +1387,20 @@
                     document.getElementById('colLastName').value = settings.colLastName || -1;
                     document.getElementById('colExclusions').value = settings.colExclusions || 1;
                     document.getElementById('skipFirstRow').checked = settings.skipFirstRow !== false;
-                    
+
                     if (settings.mode) {
                         document.querySelector(`input[name="mode"][value="${settings.mode}"]`).checked = true;
                         const isSize = settings.mode === 'size';
                         document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
                         document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
                     }
-                    
+
                     if (settings.distributionValue) {
                         document.getElementById('distributionValue').value = settings.distributionValue;
                     }
-                    
+
                     if (settings.restMode) {
                         document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
-                    }
-                    
-                    if (settings.optimizeForSpeed !== undefined) {
-                        document.getElementById('optimizeForSpeed').checked = settings.optimizeForSpeed;
-                    }
-                    
-                    if (settings.prioritizeNoConflicts !== undefined) {
-                        document.getElementById('prioritizeNoConflicts').checked = settings.prioritizeNoConflicts;
                     }
                 }
             } catch (e) {
@@ -1412,7 +1410,7 @@
 
         // Upload handling
         uploadArea.addEventListener('click', () => fileInput.click());
-        
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -1472,9 +1470,6 @@
             saveState();
         });
 
-        document.getElementById('optimizeForSpeed').addEventListener('change', saveState);
-        document.getElementById('prioritizeNoConflicts').addEventListener('change', saveState);
-
         function updateRestModeHint() {
             const activeCount = people.filter(p => !p.ignored).length;
             const size = parseInt(document.getElementById('distributionValue').value) || 1;
@@ -1484,7 +1479,7 @@
             if (activeCount && size) {
                 const numGroups = Math.floor(activeCount / size);
                 const rest = activeCount % size;
-                
+
                 if (rest === 0) {
                     hint.textContent = `${activeCount} Personen → ${numGroups} Gruppen à ${size} Personen`;
                 } else if (restMode === 'distribute') {
@@ -1498,29 +1493,29 @@
         // Handle file upload
         function handleFile(file) {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
+
                     currentFileData = {
                         name: file.name,
                         size: file.size,
                         type: file.type,
                         lastModified: file.lastModified
                     };
-                    
+
                     parseData(rows);
-                    
+
                     showToast('Datei erfolgreich geladen!');
                 } catch (error) {
                     showToast('Fehler beim Laden der Datei: ' + error.message, 'error');
                 }
             };
-            
+
             reader.readAsArrayBuffer(file);
         }
 
@@ -1543,7 +1538,7 @@
 
                 const firstName = row[colFirst].toString().trim();
                 const lastName = colLast >= 0 && row[colLast] ? row[colLast].toString().trim() : '';
-                const exclusions = colExcl >= 0 && row[colExcl] ? 
+                const exclusions = colExcl >= 0 && row[colExcl] ?
                     row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e) : [];
 
                 // Count first names for duplicate handling
@@ -1588,7 +1583,7 @@
                 if (person.exclusions && person.exclusions.length > 0) {
                     conflictInfo = `<span style="font-size: 0.8em; color: var(--text-secondary); margin-left: 8px;">(${person.exclusions.length} Ausschluss${person.exclusions.length !== 1 ? 'e' : ''})</span>`;
                 }
-                
+
                 return `
                     <div class="person-item ${person.ignored ? 'ignored' : ''}" data-index="${index}">
                         <input type="checkbox" class="person-checkbox" 
@@ -1635,7 +1630,7 @@
         // Analyze conflicts button
         document.getElementById('analyzeConflictsBtn').addEventListener('click', () => {
             const conflictAnalysis = analyzeConflicts();
-            
+
             if (conflictAnalysis.totalConflicts === 0) {
                 showToast('Keine Konflikte in den Ausschlüssen gefunden!', 'success');
             } else {
@@ -1643,11 +1638,11 @@
                 conflictAnalysis.conflictPairs.slice(0, 5).forEach(pair => {
                     message += `• ${pair.person1} ↔ ${pair.person2}\n`;
                 });
-                
+
                 if (conflictAnalysis.conflictPairs.length > 5) {
                     message += `... und ${conflictAnalysis.conflictPairs.length - 5} weitere`;
                 }
-                
+
                 showToast(message, 'warning');
             }
         });
@@ -1655,7 +1650,7 @@
         // Distribute groups with advanced algorithm
         document.getElementById('distributeBtn').addEventListener('click', async () => {
             const activePeople = people.filter(p => !p.ignored);
-            
+
             if (activePeople.length === 0) {
                 showToast('Keine aktiven Personen zum Verteilen!', 'warning');
                 return;
@@ -1664,7 +1659,7 @@
             const mode = document.querySelector('input[name="mode"]:checked').value;
             const value = parseInt(document.getElementById('distributionValue').value);
             const remainderMode = document.querySelector('input[name="restMode"]:checked').value;
-            
+
             // Prepare persons for distribution
             const personsForDistribution = activePeople.map((person, index) => ({
                 ...person,
@@ -1693,7 +1688,7 @@
             const progressBar = document.getElementById('distributionProgress');
             const progressFill = progressBar.querySelector('.progress-fill');
             progressBar.style.display = 'block';
-            
+
             // Disable button during distribution
             const distributeBtn = document.getElementById('distributeBtn');
             const originalText = distributeBtn.innerHTML;
@@ -1704,11 +1699,11 @@
             const result = await new Promise(resolve => {
                 setTimeout(() => {
                     const result = assignGroupsAdaptive(
-                        personsForDistribution, 
-                        numGroups, 
-                        mode, 
-                        remainderMode, 
-                        targetGroupSize, 
+                        personsForDistribution,
+                        numGroups,
+                        mode,
+                        remainderMode,
+                        targetGroupSize,
                         firstNameCount,
                         (progress) => {
                             progressFill.style.width = `${progress}%`;
@@ -1735,7 +1730,7 @@
 
             if (result.totalConflicts > 0) {
                 showToast(`Gruppen eingeteilt (${result.totalConflicts} Konflikt(e) gefunden)`, 'warning');
-                
+
                 // Log conflict details
                 groups.forEach((group, idx) => {
                     const groupConflicts = group.reduce((sum, person) =>
@@ -1762,43 +1757,19 @@
         function renderGroups() {
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
-                const groupConflicts = calculateTotalConflicts([group], firstNameCount);
-                const conflictIndicator = groupConflicts > 0 ? 
-                    `<span class="conflict-badge" style="font-size: 0.7em; margin-left: 8px;">${groupConflicts} Konflikt(e)</span>` : 
-                    '';
-                
+                // Entfernt: Konflikte-Anzeige aus den Gruppen
                 const members = group.map(p => {
                     return `<div class="group-member">${p.displayName}</div>`;
                 }).join('');
 
                 return `
                     <div class="group-card">
-                        <div class="group-header">Gruppe ${index + 1} (${group.length})${conflictIndicator}</div>
+                        <div class="group-header">Gruppe ${index + 1} (${group.length})</div>
                         ${members}
                     </div>
                 `;
             }).join('');
         }
-
-        // Shuffle groups button
-        document.getElementById('shuffleGroupsBtn').addEventListener('click', () => {
-            if (groups.length === 0) return;
-            
-            // Flatten groups and reshuffle
-            const allPeople = groups.flat();
-            const shuffledPeople = shuffle(allPeople);
-            
-            // Redistribute evenly
-            const newGroups = Array.from({ length: groups.length }, () => []);
-            shuffledPeople.forEach((person, index) => {
-                newGroups[index % groups.length].push(person);
-            });
-            
-            groups = newGroups;
-            renderGroups();
-            saveState();
-            showToast('Gruppen wurden neu gemischt!');
-        });
 
         // Export to Excel
         document.getElementById('exportBtn').addEventListener('click', () => {
@@ -1809,10 +1780,10 @@
 
             const ws_data = [];
             const maxLength = Math.max(...groups.map(g => g.length));
-            
+
             // Header
             ws_data.push(groups.map((_, i) => `Gruppe ${i + 1}`));
-            
+
             // Data
             for (let i = 0; i < maxLength; i++) {
                 ws_data.push(groups.map(g => {
@@ -1826,12 +1797,12 @@
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Gruppen");
-            
+
             const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-            const filename = currentListName ? 
+            const filename = currentListName ?
                 `Gruppeneinteilung_${currentListName}_${timestamp}.xlsx` :
                 `Gruppeneinteilung_${timestamp}.xlsx`;
-            
+
             XLSX.writeFile(wb, filename);
             showToast('Excel-Datei wurde heruntergeladen!');
         });
@@ -1857,7 +1828,7 @@
             }
 
             const randomPerson = activePeople[Math.floor(Math.random() * activePeople.length)];
-            
+
             const result = document.getElementById('randomResult');
             result.textContent = `👤 ${randomPerson.displayName}`;
             result.classList.remove('show');
@@ -1932,9 +1903,7 @@
                     skipFirstRow: document.getElementById('skipFirstRow').checked,
                     mode: document.querySelector('input[name="mode"]:checked').value,
                     distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value,
-                    optimizeForSpeed: document.getElementById('optimizeForSpeed').checked,
-                    prioritizeNoConflicts: document.getElementById('prioritizeNoConflicts').checked
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
                 },
                 timestamp: new Date().toISOString()
             };
@@ -1942,10 +1911,10 @@
             localStorage.setItem('savedLists', JSON.stringify(lists));
             currentListName = name;
             document.getElementById('listName').value = '';
-            
+
             // Save current list name
             localStorage.setItem('currentListName', name);
-            
+
             loadSavedLists();
             updateFileDisplay();
             showToast(`Liste "${name}" gespeichert!`);
@@ -1962,11 +1931,11 @@
                 const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
                 delete lists[currentListName];
                 localStorage.setItem('savedLists', JSON.stringify(lists));
-                
+
                 // Reset to file state if available
                 currentListName = '';
                 localStorage.removeItem('currentListName');
-                
+
                 loadSavedLists();
                 updateFileDisplay();
                 showToast(`Liste "${currentListName}" gelöscht`);
@@ -1977,7 +1946,7 @@
         function loadSavedLists() {
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const container = document.getElementById('savedListsContainer');
-            
+
             if (Object.keys(lists).length === 0) {
                 savedListsCard.style.display = 'none';
                 return;
@@ -1989,7 +1958,7 @@
                 const isActive = name === currentListName;
                 const date = list.timestamp ? new Date(list.timestamp).toLocaleDateString('de-DE') : '';
                 const personCount = list.people ? list.people.length : 0;
-                
+
                 return `
                     <div class="saved-list-item ${isActive ? 'active' : ''}">
                         <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
@@ -2013,7 +1982,7 @@
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const list = lists[name];
-            
+
             if (!list) return;
 
             isLoadingList = true;
@@ -2021,13 +1990,13 @@
             // Load people
             people = list.people || [];
             currentListName = name;
-            
+
             // Update firstNameCount
             firstNameCount = {};
             people.forEach(person => {
                 firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
             });
-            
+
             // Update display names
             people.forEach(person => {
                 if (firstNameCount[person.firstName] > 1 && person.lastName) {
@@ -2037,38 +2006,30 @@
                     person.displayName = person.firstName;
                 }
             });
-            
+
             // Load groups if available
             groups = list.groups || [];
-            
+
             // Apply settings
             if (list.settings) {
                 document.getElementById('colFirstName').value = list.settings.colFirstName || 0;
                 document.getElementById('colLastName').value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
                 document.getElementById('colExclusions').value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
                 document.getElementById('skipFirstRow').checked = list.settings.skipFirstRow !== false;
-                
+
                 if (list.settings.mode) {
                     document.querySelector(`input[name="mode"][value="${list.settings.mode}"]`).checked = true;
                     const isSize = list.settings.mode === 'size';
                     document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
                     document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
                 }
-                
+
                 if (list.settings.distributionValue) {
                     document.getElementById('distributionValue').value = list.settings.distributionValue;
                 }
-                
+
                 if (list.settings.restMode) {
                     document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`).checked = true;
-                }
-                
-                if (list.settings.optimizeForSpeed !== undefined) {
-                    document.getElementById('optimizeForSpeed').checked = list.settings.optimizeForSpeed;
-                }
-                
-                if (list.settings.prioritizeNoConflicts !== undefined) {
-                    document.getElementById('prioritizeNoConflicts').checked = list.settings.prioritizeNoConflicts;
                 }
             }
 
@@ -2078,7 +2039,7 @@
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
             saveListCard.style.display = 'block';
-            
+
             // Show groups if available
             if (groups.length > 0) {
                 renderGroups();
@@ -2090,24 +2051,27 @@
                 document.getElementById('randomGroupBtn').disabled = true;
                 document.getElementById('randomPairBtn').disabled = true;
             }
-            
+
+            // Zufalls-Person-Feld zurücksetzen
+            document.getElementById('randomResult').classList.remove('show');
+
             // Update file display
             updateFileDisplay();
-            
+
             // Update conflict display
             updateConflictDisplay();
-            
+
             // Save as current list
             localStorage.setItem('currentListName', name);
-            
+
             // Refresh list display to show active state
             loadSavedLists();
-            
+
             isLoadingList = false;
-            
+
             // Save state (but not to the list itself during loading)
             saveState();
-            
+
             if (!silent) {
                 showToast(`Liste "${name}" geladen!`);
             }
@@ -2120,13 +2084,13 @@
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             delete lists[name];
             localStorage.setItem('savedLists', JSON.stringify(lists));
-            
+
             if (currentListName === name) {
                 currentListName = '';
                 localStorage.removeItem('currentListName');
                 updateFileDisplay();
             }
-            
+
             loadSavedLists();
             showToast(`Liste "${name}" gelöscht`);
         }
@@ -2134,7 +2098,7 @@
         // Download example file
         document.getElementById('downloadExample').addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             const exampleData = [
                 ['Vorname', 'Ausschlüsse', 'Nachname'],
                 ['Max', 'Anna, Peter', 'Müller'],
@@ -2154,14 +2118,14 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Beispiel");
             XLSX.writeFile(wb, "Beispiel-Gruppenliste.xlsx");
-            
+
             showToast('Beispiel-Datei wurde heruntergeladen!');
         });
 
         // Initialize
         loadSavedLists();
         loadState();
-        
+
         // Show welcome message
         setTimeout(() => {
             if (people.length === 0) {
@@ -2170,4 +2134,5 @@
         }, 1000);
     </script>
 </body>
+
 </html>

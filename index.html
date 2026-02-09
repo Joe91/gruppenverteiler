@@ -423,10 +423,22 @@
             <h2>👥 Personen (klicken zum Ignorieren)</h2>
             <div class="stats-info" id="statsInfo"></div>
             <div class="person-list" id="personList"></div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="resetIgnoredPersons()" style="flex: 1;" id="resetIgnoredBtn">
+                    🔄 Ignorierte zurücksetzen
+                </button>
+            </div>
         </div>
 
-        <!-- Controls -->
-        <div class="controls">
+        <!-- Parse Settings Toggle -->
+        <div style="margin-bottom: 20px;">
+            <button class="btn-secondary" onclick="toggleParseSettings()" style="width: 100%;">
+                ⚙️ Parse-Einstellungen anzeigen
+            </button>
+        </div>
+
+        <!-- Controls (Parse Settings) -->
+        <div id="parseSettingsSection" class="controls" style="display: none;">
             <div class="control-group">
                 <label for="nameColumn">Spalte: Vorname (0-basiert)</label>
                 <input type="number" id="nameColumn" value="0" min="0">
@@ -478,6 +490,10 @@
             </button>
             <button class="btn-secondary" id="exportBtn" onclick="exportToExcel()" disabled>
                 💾 Als Excel exportieren
+            </button>
+            <button class="btn-secondary" id="deleteGroupsBtn" onclick="deleteCurrentDistribution()" disabled
+                style="background: #dc3545;">
+                🗑️ Verteilung löschen
             </button>
         </div>
 
@@ -865,7 +881,6 @@
             const listData = savedLists[name];
 
             if (!listData) {
-                alert('❌ Liste nicht gefunden!');
                 return;
             }
 
@@ -898,9 +913,7 @@
                 displayGroups();
                 exportBtn.disabled = false;
                 document.getElementById('randomGroupBtn').disabled = false;
-                alert(`✅ Liste "${name}" mit Verteilung geladen!`);
-            } else {
-                alert(`✅ Liste "${name}" geladen!`);
+                document.getElementById('deleteGroupsBtn').disabled = false;
             }
 
             loadSavedLists();
@@ -1073,6 +1086,7 @@
             }
 
             document.getElementById('randomGroupBtn').disabled = false;
+            document.getElementById('deleteGroupsBtn').disabled = false;
             displayGroups();
             exportBtn.disabled = false;
 
@@ -1169,6 +1183,43 @@
         ignoreFirstRow.addEventListener('change', () => {
             if (currentData.length > 0) displayPersonList();
         });
+
+        // Toggle parse settings visibility
+        function toggleParseSettings() {
+            const section = document.getElementById('parseSettingsSection');
+            const btn = event.target;
+            if (section.style.display === 'none') {
+                section.style.display = 'grid';
+                btn.textContent = '⚙️ Parse-Einstellungen ausblenden';
+            } else {
+                section.style.display = 'none';
+                btn.textContent = '⚙️ Parse-Einstellungen anzeigen';
+            }
+        }
+
+        // Reset ignored persons
+        function resetIgnoredPersons() {
+            if (ignoredPersons.size === 0) {
+                return;
+            }
+            ignoredPersons.clear();
+            displayPersonList();
+        }
+
+        // Delete current distribution
+        function deleteCurrentDistribution() {
+            currentGroups = [];
+            groupsContainer.innerHTML = '';
+            exportBtn.disabled = true;
+            document.getElementById('deleteGroupsBtn').disabled = true;
+            document.getElementById('randomGroupBtn').disabled = true;
+
+            // Speichere den geänderten Zustand
+            saveLastDistribution();
+            if (currentListName) {
+                updateLoadedList();
+            }
+        }
 
         // Random selection functions
         function selectRandomPerson() {

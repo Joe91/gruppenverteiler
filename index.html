@@ -657,6 +657,43 @@
             gap: 8px;
         }
 
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Conflict Indicator */
+        .conflict-badge {
+            display: inline-block;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header h1 {
@@ -733,7 +770,7 @@
 
             <div id="filePreview" style="display: none; margin-top: 20px;">
                 <div style="background: var(--bg-main); padding: 16px; border-radius: var(--radius-sm);">
-                    <strong>Datei geladen:</strong> <span id="fileName"></span>
+                    <strong>Geladen:</strong> <span id="fileName"></span>
                     <div style="margin-top: 8px; font-size: 0.9rem; color: var(--text-secondary);">
                         <span id="fileStats"></span>
                     </div>
@@ -766,7 +803,7 @@
                 <div class="form-group">
                     <label class="form-label">Spalte: Ausschlüsse</label>
                     <input type="number" id="colExclusions" class="form-input" value="1" min="-1">
-                        <span class="form-hint">Komma-getrennte Namen (z.B. "Anna, Peter"). -1 = keine Ausschlüsse</span>
+                    <span class="form-hint">Komma-getrennte Namen (z.B. "Anna, Peter"). -1 = keine Ausschlüsse</span>
                 </div>
 
                 <div class="form-group">
@@ -783,6 +820,9 @@
             <div class="card-header">
                 <span class="card-icon">💾</span>
                 <h2>Gespeicherte Listen</h2>
+                <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.9rem;" onclick="clearCurrentList()">
+                    🗑️ Aktuelle Liste löschen
+                </button>
             </div>
             <div id="savedListsContainer" class="saved-lists-grid"></div>
         </div>
@@ -798,13 +838,16 @@
                 <input type="text" id="listName" class="form-input" placeholder="z.B. Klasse 10a">
             </div>
             <button class="btn btn-success" id="saveListBtn">💾 Liste speichern</button>
+            <div class="progress-bar" id="saveProgress">
+                <div class="progress-fill"></div>
+            </div>
         </div>
 
         <!-- Person List -->
         <div class="card" id="personListCard" style="display: none;">
             <div class="card-header">
                 <span class="card-icon">👥</span>
-                <h2>Personen auswählen</h2>
+                <h2>Personen auswählen <span id="conflictBadge" class="conflict-badge" style="display: none;">Konflikte</span></h2>
             </div>
             
             <div class="person-stats">
@@ -820,12 +863,17 @@
                     <div class="stat-value" id="ignoredCount">0</div>
                     <div class="stat-label">Ignoriert</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="conflictCount">0</div>
+                    <div class="stat-label">Konflikte</div>
+                </div>
             </div>
 
             <div id="personList" class="person-grid"></div>
             
             <div class="action-buttons" style="margin-top: 20px;">
                 <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
+                <button class="btn btn-secondary" id="analyzeConflictsBtn">🔍 Konflikte analysieren</button>
             </div>
         </div>
 
@@ -872,8 +920,23 @@
                 <span class="form-hint" id="restModeHint"></span>
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Algorithmus-Einstellungen</label>
+                <div class="checkbox-group" style="margin-bottom: 8px;">
+                    <input type="checkbox" id="optimizeForSpeed" checked>
+                    <span>Für Geschwindigkeit optimieren</span>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="prioritizeNoConflicts" checked>
+                    <span>Konfliktfreie Gruppen priorisieren</span>
+                </div>
+            </div>
+
             <div class="action-buttons">
                 <button class="btn btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
+                <div class="progress-bar" id="distributionProgress">
+                    <div class="progress-fill"></div>
+                </div>
             </div>
         </div>
 
@@ -882,12 +945,14 @@
             <div class="card-header">
                 <span class="card-icon">🎯</span>
                 <h2>Gruppeneinteilung</h2>
+                <span id="conflictSummary" style="margin-left: auto; font-size: 0.9rem; color: var(--text-secondary);"></span>
             </div>
 
             <div id="groupsContainer" class="groups-container"></div>
 
             <div class="action-buttons">
                 <button class="btn btn-success" id="exportBtn">💾 Als Excel exportieren</button>
+                <button class="btn btn-secondary" id="shuffleGroupsBtn">🔀 Gruppen neu mischen</button>
                 <button class="btn btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
             </div>
         </div>
@@ -902,6 +967,7 @@
             <div class="action-buttons">
                 <button class="btn btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
                 <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
+                <button class="btn btn-secondary" id="randomPairBtn" disabled>👫 Zufälliges Paar</button>
             </div>
 
             <div id="randomResult" class="random-result"></div>
@@ -921,7 +987,9 @@
         let people = [];
         let groups = [];
         let currentListName = '';
-        let firstNameCount = {}; // For duplicate first name handling
+        let firstNameCount = {};
+        let currentFileData = null;
+        let isLoadingList = false;
 
         // LocalStorage keys
         const STORAGE_KEYS = {
@@ -929,7 +997,8 @@
             GROUPS: 'gruppenverteiler_groups',
             SETTINGS: 'gruppenverteiler_settings',
             IGNORED: 'gruppenverteiler_ignored',
-            CURRENT_LIST: 'gruppenverteiler_currentList'
+            CURRENT_LIST: 'gruppenverteiler_currentList',
+            LAST_FILE: 'gruppenverteiler_lastFile'
         };
 
         // DOM Elements
@@ -954,7 +1023,8 @@
             const icons = {
                 success: '✓',
                 error: '✗',
-                warning: '⚠'
+                warning: '⚠',
+                info: 'ℹ'
             };
 
             toast.className = 'toast ' + type;
@@ -965,6 +1035,25 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        // Update file display
+        function updateFileDisplay() {
+            const filePreview = document.getElementById('filePreview');
+            const fileName = document.getElementById('fileName');
+            const fileStats = document.getElementById('fileStats');
+
+            if (currentListName) {
+                filePreview.style.display = 'block';
+                fileName.textContent = `📁 ${currentListName} (gespeicherte Liste)`;
+                fileStats.textContent = `${people.length} Personen, ${groups.length} Gruppen`;
+            } else if (people.length > 0) {
+                filePreview.style.display = 'block';
+                fileName.textContent = `📄 ${currentFileData?.name || 'Hochgeladene Datei'}`;
+                fileStats.textContent = `${people.length} Personen geladen`;
+            } else {
+                filePreview.style.display = 'none';
+            }
         }
 
         // Fisher-Yates Shuffle
@@ -1046,12 +1135,13 @@
         }
 
         // Adaptive backtracking algorithm (from index.html)
-        function assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount) {
+        function assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, onProgress = null) {
             const startTime = performance.now();
-            const maxTime = 700; // Max time in ms (0.7 seconds)
-            const minAttempts = 5;
-            const maxAttempts = 1000;
-            const maxNoImprovement = 700;
+            const maxTime = document.getElementById('optimizeForSpeed').checked ? 500 : 1000;
+            const minAttempts = 3;
+            const maxAttempts = document.getElementById('optimizeForSpeed').checked ? 50 : 200;
+            const maxNoImprovement = 100;
+            const prioritizeNoConflicts = document.getElementById('prioritizeNoConflicts').checked;
 
             let bestSolution = null;
             let minTotalConflicts = Infinity;
@@ -1060,6 +1150,11 @@
 
             while (attempt < maxAttempts) {
                 attempt++;
+
+                // Update progress
+                if (onProgress) {
+                    onProgress(Math.min(100, (attempt / maxAttempts) * 100));
+                }
 
                 // Check time limit
                 if (attempt > minAttempts && performance.now() - startTime > maxTime) {
@@ -1089,13 +1184,16 @@
 
                 const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
 
-                if (totalConflicts < minTotalConflicts) {
+                // Prioritize conflict-free solutions
+                const solutionValue = prioritizeNoConflicts && totalConflicts === 0 ? -1 : totalConflicts;
+
+                if (solutionValue < minTotalConflicts) {
                     minTotalConflicts = totalConflicts;
                     bestSolution = groups.map(g => [...g]);
                     noImprovementCount = 0;
 
                     // Perfect solution found - stop immediately
-                    if (totalConflicts === 0) {
+                    if (totalConflicts === 0 && prioritizeNoConflicts) {
                         console.log(`✓ Perfect solution found (attempt ${attempt})`);
                         break;
                     }
@@ -1121,11 +1219,78 @@
             };
         }
 
+        // Analyze conflicts
+        function analyzeConflicts() {
+            const activePeople = people.filter(p => !p.ignored);
+            let totalConflicts = 0;
+            const conflictPairs = [];
+
+            activePeople.forEach((person, i) => {
+                activePeople.forEach((other, j) => {
+                    if (i < j) {
+                        if (checkExclusion(person, other, firstNameCount) || 
+                            checkExclusion(other, person, firstNameCount)) {
+                            totalConflicts++;
+                            conflictPairs.push({
+                                person1: person.displayName,
+                                person2: other.displayName,
+                                reason: person.exclusions.includes(other.displayName) ? 
+                                    `${person.displayName} schließt ${other.displayName} aus` :
+                                    `${other.displayName} schließt ${person.displayName} aus`
+                            });
+                        }
+                    }
+                });
+            });
+
+            return {
+                totalConflicts,
+                conflictPairs,
+                hasConflicts: totalConflicts > 0
+            };
+        }
+
+        // Update conflict display
+        function updateConflictDisplay() {
+            const conflictAnalysis = analyzeConflicts();
+            const conflictBadge = document.getElementById('conflictBadge');
+            const conflictCount = document.getElementById('conflictCount');
+
+            if (conflictAnalysis.hasConflicts) {
+                conflictBadge.style.display = 'inline-block';
+                conflictBadge.textContent = `${conflictAnalysis.totalConflicts} Konflikt(e)`;
+                conflictCount.textContent = conflictAnalysis.totalConflicts;
+                
+                // Show warning in groups card if conflicts exist
+                const conflictSummary = document.getElementById('conflictSummary');
+                if (conflictSummary) {
+                    conflictSummary.textContent = `⚠ ${conflictAnalysis.totalConflicts} Konflikt(e) in Ausschlüssen`;
+                    conflictSummary.style.color = 'var(--warning)';
+                }
+            } else {
+                conflictBadge.style.display = 'none';
+                conflictCount.textContent = '0';
+                
+                const conflictSummary = document.getElementById('conflictSummary');
+                if (conflictSummary) {
+                    conflictSummary.textContent = '✓ Keine Konflikte';
+                    conflictSummary.style.color = 'var(--success)';
+                }
+            }
+
+            return conflictAnalysis;
+        }
+
         // Save state to localStorage
         function saveState() {
             try {
-                localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
-                localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+                // Only save to generic storage if no list is loaded or it's a file upload
+                if (!currentListName || isLoadingList) {
+                    localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
+                    localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+                }
+                
+                // Always save current list name
                 localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
                 
                 const settings = {
@@ -1135,20 +1300,34 @@
                     skipFirstRow: document.getElementById('skipFirstRow').checked,
                     mode: document.querySelector('input[name="mode"]:checked').value,
                     distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                    restMode: document.querySelector('input[name="restMode"]:checked').value,
+                    optimizeForSpeed: document.getElementById('optimizeForSpeed').checked,
+                    prioritizeNoConflicts: document.getElementById('prioritizeNoConflicts').checked
                 };
                 localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
                 
-                if (currentListName) {
+                // If we have an active list, also save to that list (but only if not currently loading)
+                if (currentListName && !isLoadingList) {
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
-                    if (lists[currentListName]) {
-                        lists[currentListName] = {
-                            people: people,
-                            groups: groups,
-                            settings: settings
-                        };
-                        localStorage.setItem('savedLists', JSON.stringify(lists));
-                    }
+                    lists[currentListName] = {
+                        people: people,
+                        groups: groups,
+                        settings: settings,
+                        timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem('savedLists', JSON.stringify(lists));
+                    
+                    // Show saving animation
+                    const progressBar = document.getElementById('saveProgress');
+                    const progressFill = progressBar.querySelector('.progress-fill');
+                    progressBar.style.display = 'block';
+                    progressFill.style.width = '100%';
+                    setTimeout(() => {
+                        progressFill.style.width = '0%';
+                        setTimeout(() => {
+                            progressBar.style.display = 'none';
+                        }, 300);
+                    }, 500);
                 }
             } catch (e) {
                 console.error('Error saving state:', e);
@@ -1158,16 +1337,19 @@
         // Load state from localStorage
         function loadState() {
             try {
-                const savedListName = localStorage.getItem('currentListName');
+                // Check if there was an active list
+                const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
                 
                 if (savedListName) {
+                    // Load the active list
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
                     if (lists[savedListName]) {
-                        loadList(savedListName);
+                        loadList(savedListName, true); // Silent load on startup
                         return;
                     }
                 }
                 
+                // Fallback: Try to load from old generic storage (for backwards compatibility)
                 const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
                 if (savedPeople) {
                     people = JSON.parse(savedPeople);
@@ -1177,6 +1359,7 @@
                         distributionCard.style.display = 'block';
                         randomCard.style.display = 'block';
                         saveListCard.style.display = 'block';
+                        updateFileDisplay();
                     }
                 }
 
@@ -1187,6 +1370,7 @@
                         renderGroups();
                         groupsCard.style.display = 'block';
                         document.getElementById('randomGroupBtn').disabled = false;
+                        document.getElementById('randomPairBtn').disabled = false;
                     }
                 }
 
@@ -1211,6 +1395,14 @@
                     
                     if (settings.restMode) {
                         document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
+                    }
+                    
+                    if (settings.optimizeForSpeed !== undefined) {
+                        document.getElementById('optimizeForSpeed').checked = settings.optimizeForSpeed;
+                    }
+                    
+                    if (settings.prioritizeNoConflicts !== undefined) {
+                        document.getElementById('prioritizeNoConflicts').checked = settings.prioritizeNoConflicts;
                     }
                 }
             } catch (e) {
@@ -1280,6 +1472,9 @@
             saveState();
         });
 
+        document.getElementById('optimizeForSpeed').addEventListener('change', saveState);
+        document.getElementById('prioritizeNoConflicts').addEventListener('change', saveState);
+
         function updateRestModeHint() {
             const activeCount = people.filter(p => !p.ignored).length;
             const size = parseInt(document.getElementById('distributionValue').value) || 1;
@@ -1311,12 +1506,14 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                     
-                    parseData(rows);
+                    currentFileData = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        lastModified: file.lastModified
+                    };
                     
-                    document.getElementById('filePreview').style.display = 'block';
-                    document.getElementById('fileName').textContent = file.name;
-                    document.getElementById('fileStats').textContent = 
-                        `${rows.length} Zeilen, ${rows[0]?.length || 0} Spalten`;
+                    parseData(rows);
                     
                     showToast('Datei erfolgreich geladen!');
                 } catch (error) {
@@ -1336,7 +1533,7 @@
 
             people = [];
             groups = [];
-            currentListName = '';
+            // DON'T clear currentListName here - only clear when explicitly loading another list
             firstNameCount = {};
             const startRow = skipFirst ? 1 : 0;
 
@@ -1378,6 +1575,8 @@
             saveListCard.style.display = 'block';
             groupsCard.style.display = 'none';
             updateStats();
+            updateFileDisplay();
+            updateConflictDisplay();
             saveState();
             loadSavedLists();
         }
@@ -1385,12 +1584,17 @@
         // Render person list
         function renderPersonList() {
             personList.innerHTML = people.map((person, index) => {
+                let conflictInfo = '';
+                if (person.exclusions && person.exclusions.length > 0) {
+                    conflictInfo = `<span style="font-size: 0.8em; color: var(--text-secondary); margin-left: 8px;">(${person.exclusions.length} Ausschluss${person.exclusions.length !== 1 ? 'e' : ''})</span>`;
+                }
+                
                 return `
                     <div class="person-item ${person.ignored ? 'ignored' : ''}" data-index="${index}">
                         <input type="checkbox" class="person-checkbox" 
                                ${person.ignored ? 'checked' : ''} 
                                onchange="togglePerson(${index})">
-                        <span>${person.displayName}</span>
+                        <span>${person.displayName}${conflictInfo}</span>
                     </div>
                 `;
             }).join('');
@@ -1403,6 +1607,7 @@
             people[index].ignored = !people[index].ignored;
             renderPersonList();
             updateRestModeHint();
+            updateConflictDisplay();
             saveState();
         }
 
@@ -1422,12 +1627,33 @@
             people.forEach(p => p.ignored = false);
             renderPersonList();
             updateRestModeHint();
+            updateConflictDisplay();
             saveState();
             showToast('Alle Personen wurden aktiviert');
         });
 
+        // Analyze conflicts button
+        document.getElementById('analyzeConflictsBtn').addEventListener('click', () => {
+            const conflictAnalysis = analyzeConflicts();
+            
+            if (conflictAnalysis.totalConflicts === 0) {
+                showToast('Keine Konflikte in den Ausschlüssen gefunden!', 'success');
+            } else {
+                let message = `${conflictAnalysis.totalConflicts} Konflikt(e) gefunden:\n`;
+                conflictAnalysis.conflictPairs.slice(0, 5).forEach(pair => {
+                    message += `• ${pair.person1} ↔ ${pair.person2}\n`;
+                });
+                
+                if (conflictAnalysis.conflictPairs.length > 5) {
+                    message += `... und ${conflictAnalysis.conflictPairs.length - 5} weitere`;
+                }
+                
+                showToast(message, 'warning');
+            }
+        });
+
         // Distribute groups with advanced algorithm
-        document.getElementById('distributeBtn').addEventListener('click', () => {
+        document.getElementById('distributeBtn').addEventListener('click', async () => {
             const activePeople = people.filter(p => !p.ignored);
             
             if (activePeople.length === 0) {
@@ -1463,18 +1689,49 @@
                 if (numGroups === 0) numGroups = 1;
             }
 
-            // Use adaptive backtracking algorithm
-            const result = assignGroupsAdaptive(
-                personsForDistribution, 
-                numGroups, 
-                mode, 
-                remainderMode, 
-                targetGroupSize, 
-                firstNameCount
-            );
+            // Show progress bar
+            const progressBar = document.getElementById('distributionProgress');
+            const progressFill = progressBar.querySelector('.progress-fill');
+            progressBar.style.display = 'block';
+            
+            // Disable button during distribution
+            const distributeBtn = document.getElementById('distributeBtn');
+            const originalText = distributeBtn.innerHTML;
+            distributeBtn.innerHTML = '<span class="loading"></span> Berechne...';
+            distributeBtn.disabled = true;
+
+            // Use adaptive backtracking algorithm with progress updates
+            const result = await new Promise(resolve => {
+                setTimeout(() => {
+                    const result = assignGroupsAdaptive(
+                        personsForDistribution, 
+                        numGroups, 
+                        mode, 
+                        remainderMode, 
+                        targetGroupSize, 
+                        firstNameCount,
+                        (progress) => {
+                            progressFill.style.width = `${progress}%`;
+                        }
+                    );
+                    resolve(result);
+                }, 100);
+            });
 
             // Store groups
             groups = result.groups || [];
+
+            // Hide progress bar
+            setTimeout(() => {
+                progressFill.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 300);
+            }, 500);
+
+            // Re-enable button
+            distributeBtn.innerHTML = originalText;
+            distributeBtn.disabled = false;
 
             if (result.totalConflicts > 0) {
                 showToast(`Gruppen eingeteilt (${result.totalConflicts} Konflikt(e) gefunden)`, 'warning');
@@ -1496,6 +1753,8 @@
             renderGroups();
             groupsCard.style.display = 'block';
             document.getElementById('randomGroupBtn').disabled = false;
+            document.getElementById('randomPairBtn').disabled = false;
+            updateConflictDisplay();
             saveState();
         });
 
@@ -1503,18 +1762,43 @@
         function renderGroups() {
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
+                const groupConflicts = calculateTotalConflicts([group], firstNameCount);
+                const conflictIndicator = groupConflicts > 0 ? 
+                    `<span class="conflict-badge" style="font-size: 0.7em; margin-left: 8px;">${groupConflicts} Konflikt(e)</span>` : 
+                    '';
+                
                 const members = group.map(p => {
                     return `<div class="group-member">${p.displayName}</div>`;
                 }).join('');
 
                 return `
                     <div class="group-card">
-                        <div class="group-header">Gruppe ${index + 1} (${group.length})</div>
+                        <div class="group-header">Gruppe ${index + 1} (${group.length})${conflictIndicator}</div>
                         ${members}
                     </div>
                 `;
             }).join('');
         }
+
+        // Shuffle groups button
+        document.getElementById('shuffleGroupsBtn').addEventListener('click', () => {
+            if (groups.length === 0) return;
+            
+            // Flatten groups and reshuffle
+            const allPeople = groups.flat();
+            const shuffledPeople = shuffle(allPeople);
+            
+            // Redistribute evenly
+            const newGroups = Array.from({ length: groups.length }, () => []);
+            shuffledPeople.forEach((person, index) => {
+                newGroups[index % groups.length].push(person);
+            });
+            
+            groups = newGroups;
+            renderGroups();
+            saveState();
+            showToast('Gruppen wurden neu gemischt!');
+        });
 
         // Export to Excel
         document.getElementById('exportBtn').addEventListener('click', () => {
@@ -1558,6 +1842,7 @@
                 groups = [];
                 groupsCard.style.display = 'none';
                 document.getElementById('randomGroupBtn').disabled = true;
+                document.getElementById('randomPairBtn').disabled = true;
                 saveState();
                 showToast('Gruppeneinteilung gelöscht');
             }
@@ -1596,6 +1881,33 @@
             setTimeout(() => result.classList.add('show'), 10);
         });
 
+        // Random pair
+        document.getElementById('randomPairBtn').addEventListener('click', () => {
+            const activePeople = people.filter(p => !p.ignored);
+            if (activePeople.length < 2) {
+                showToast('Nicht genügend aktive Personen für ein Paar!', 'warning');
+                return;
+            }
+
+            // Get two random different people
+            const index1 = Math.floor(Math.random() * activePeople.length);
+            let index2;
+            do {
+                index2 = Math.floor(Math.random() * activePeople.length);
+            } while (index2 === index1);
+
+            const person1 = activePeople[index1];
+            const person2 = activePeople[index2];
+
+            const result = document.getElementById('randomResult');
+            result.innerHTML = `
+                <div style="font-size: 1.2em; margin-bottom: 10px;">👫 Zufälliges Paar</div>
+                <div style="font-size: 0.9em;">${person1.displayName} & ${person2.displayName}</div>
+            `;
+            result.classList.remove('show');
+            setTimeout(() => result.classList.add('show'), 10);
+        });
+
         // Save list
         document.getElementById('saveListBtn').addEventListener('click', () => {
             const name = document.getElementById('listName').value.trim();
@@ -1604,7 +1916,12 @@
                 return;
             }
 
+            // Check if name already exists
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+            if (lists[name] && !confirm(`Liste "${name}" existiert bereits. Überschreiben?`)) {
+                return;
+            }
+
             lists[name] = {
                 people: people,
                 groups: groups,
@@ -1615,20 +1932,46 @@
                     skipFirstRow: document.getElementById('skipFirstRow').checked,
                     mode: document.querySelector('input[name="mode"]:checked').value,
                     distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value
-                }
+                    restMode: document.querySelector('input[name="restMode"]:checked').value,
+                    optimizeForSpeed: document.getElementById('optimizeForSpeed').checked,
+                    prioritizeNoConflicts: document.getElementById('prioritizeNoConflicts').checked
+                },
+                timestamp: new Date().toISOString()
             };
 
             localStorage.setItem('savedLists', JSON.stringify(lists));
             currentListName = name;
             document.getElementById('listName').value = '';
             
-            // Save current list name separately
+            // Save current list name
             localStorage.setItem('currentListName', name);
             
             loadSavedLists();
+            updateFileDisplay();
             showToast(`Liste "${name}" gespeichert!`);
         });
+
+        // Clear current list
+        function clearCurrentList() {
+            if (!currentListName) {
+                showToast('Keine Liste geladen!', 'warning');
+                return;
+            }
+
+            if (confirm(`Möchten Sie die aktuell geladene Liste "${currentListName}" aus dem Speicher löschen?`)) {
+                const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+                delete lists[currentListName];
+                localStorage.setItem('savedLists', JSON.stringify(lists));
+                
+                // Reset to file state if available
+                currentListName = '';
+                localStorage.removeItem('currentListName');
+                
+                loadSavedLists();
+                updateFileDisplay();
+                showToast(`Liste "${currentListName}" gelöscht`);
+            }
+        }
 
         // Load saved lists
         function loadSavedLists() {
@@ -1642,10 +1985,19 @@
 
             savedListsCard.style.display = 'block';
             container.innerHTML = Object.keys(lists).map(name => {
+                const list = lists[name];
                 const isActive = name === currentListName;
+                const date = list.timestamp ? new Date(list.timestamp).toLocaleDateString('de-DE') : '';
+                const personCount = list.people ? list.people.length : 0;
+                
                 return `
                     <div class="saved-list-item ${isActive ? 'active' : ''}">
-                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">${name}</span>
+                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
+                            ${name}
+                            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: normal;">
+                                ${personCount} Personen • ${date}
+                            </div>
+                        </span>
                         <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
                     </div>
                 `;
@@ -1653,11 +2005,18 @@
         }
 
         // Load specific list
-        function loadList(name) {
+        function loadList(name, silent = false) {
+            if (currentListName === name && !silent) {
+                showToast(`Liste "${name}" ist bereits geladen`, 'info');
+                return;
+            }
+
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const list = lists[name];
             
             if (!list) return;
+
+            isLoadingList = true;
 
             // Load people
             people = list.people || [];
@@ -1703,6 +2062,14 @@
                 if (list.settings.restMode) {
                     document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`).checked = true;
                 }
+                
+                if (list.settings.optimizeForSpeed !== undefined) {
+                    document.getElementById('optimizeForSpeed').checked = list.settings.optimizeForSpeed;
+                }
+                
+                if (list.settings.prioritizeNoConflicts !== undefined) {
+                    document.getElementById('prioritizeNoConflicts').checked = list.settings.prioritizeNoConflicts;
+                }
             }
 
             // Update UI
@@ -1717,18 +2084,33 @@
                 renderGroups();
                 groupsCard.style.display = 'block';
                 document.getElementById('randomGroupBtn').disabled = false;
+                document.getElementById('randomPairBtn').disabled = false;
             } else {
                 groupsCard.style.display = 'none';
                 document.getElementById('randomGroupBtn').disabled = true;
+                document.getElementById('randomPairBtn').disabled = true;
             }
+            
+            // Update file display
+            updateFileDisplay();
+            
+            // Update conflict display
+            updateConflictDisplay();
             
             // Save as current list
             localStorage.setItem('currentListName', name);
             
-            // Refresh list display
+            // Refresh list display to show active state
             loadSavedLists();
             
-            showToast(`Liste "${name}" geladen!`);
+            isLoadingList = false;
+            
+            // Save state (but not to the list itself during loading)
+            saveState();
+            
+            if (!silent) {
+                showToast(`Liste "${name}" geladen!`);
+            }
         }
 
         // Delete list
@@ -1741,6 +2123,8 @@
             
             if (currentListName === name) {
                 currentListName = '';
+                localStorage.removeItem('currentListName');
+                updateFileDisplay();
             }
             
             loadSavedLists();
@@ -1760,7 +2144,10 @@
                 ['Lisa', '', 'Weber'],
                 ['Tom', 'Sarah', 'Meyer'],
                 ['Julia', '', 'Wagner'],
-                ['Ben', 'Tom', 'Schulz']
+                ['Ben', 'Tom', 'Schulz'],
+                ['Maria', 'Ben, Julia', 'Klein'],
+                ['Paul', '', 'Fischer'],
+                ['Laura', 'Maria', 'Schäfer']
             ];
 
             const ws = XLSX.utils.aoa_to_sheet(exampleData);
@@ -1774,6 +2161,13 @@
         // Initialize
         loadSavedLists();
         loadState();
+        
+        // Show welcome message
+        setTimeout(() => {
+            if (people.length === 0) {
+                showToast('Laden Sie eine Datei hoch oder wählen Sie eine gespeicherte Liste aus!', 'info');
+            }
+        }, 1000);
     </script>
 </body>
 </html>

@@ -531,8 +531,10 @@
         const listNameInput = document.getElementById('listName');
         const savedListsContainer = document.getElementById('savedLists');
 
-        // Load saved lists on startup
+        // Load saved lists and settings on startup
+        loadCurrentSettings();
         loadSavedLists();
+        restoreLastDistribution();
 
         // File input handler
         fileInput.addEventListener('change', (e) => {
@@ -666,6 +668,30 @@
             statsInfo.textContent = `📊 Gesamt: ${totalPersons} | Aktiv: ${activePersons} | Ignoriert: ${ignoredPersons.size}`;
         }
 
+        function saveCurrentSettings() {
+            const settings = {
+                nameColumn: parseInt(nameColumn.value),
+                lastNameColumn: parseInt(lastNameColumn.value),
+                exclusionColumn: parseInt(exclusionColumn.value),
+                ignoreFirstRow: ignoreFirstRow.checked,
+                divisionMode: divisionMode.value,
+                groupValue: parseInt(groupValue.value),
+                remainderMode: remainderMode.value
+            };
+            localStorage.setItem('groupSettings', JSON.stringify(settings));
+        }
+
+        function loadCurrentSettings() {
+            const settings = JSON.parse(localStorage.getItem('groupSettings') || '{}');
+            if (settings.nameColumn !== undefined) nameColumn.value = settings.nameColumn;
+            if (settings.lastNameColumn !== undefined) lastNameColumn.value = settings.lastNameColumn;
+            if (settings.exclusionColumn !== undefined) exclusionColumn.value = settings.exclusionColumn;
+            if (settings.ignoreFirstRow !== undefined) ignoreFirstRow.checked = settings.ignoreFirstRow;
+            if (settings.divisionMode !== undefined) divisionMode.value = settings.divisionMode;
+            if (settings.groupValue !== undefined) groupValue.value = settings.groupValue;
+            if (settings.remainderMode !== undefined) remainderMode.value = settings.remainderMode;
+        }
+
         function saveCurrentList() {
             if (currentData.length === 0) {
                 alert('❌ Keine Daten zum Speichern vorhanden!');
@@ -680,9 +706,22 @@
 
             const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
 
+            // Speichere aktuelle Einstellungen
+            saveCurrentSettings();
+
             savedLists[listName] = {
                 data: currentData,
                 ignoredPersons: Array.from(ignoredPersons),
+                groups: currentGroups,
+                settings: {
+                    nameColumn: parseInt(nameColumn.value),
+                    lastNameColumn: parseInt(lastNameColumn.value),
+                    exclusionColumn: parseInt(exclusionColumn.value),
+                    ignoreFirstRow: ignoreFirstRow.checked,
+                    divisionMode: divisionMode.value,
+                    groupValue: parseInt(groupValue.value),
+                    remainderMode: remainderMode.value
+                },
                 timestamp: new Date().toISOString()
             };
 
@@ -690,8 +729,96 @@
             currentListName = listName;
 
             loadSavedLists();
-            alert(`✅ Liste "${listName}" gespeichert!`);
+            alert(`✅ Liste "${listName}" mit aktueller Verteilung gespeichert!`);
             listNameInput.value = '';
+        }
+
+        function updateLoadedList() {
+            if (!currentListName || currentData.length === 0) {
+                return;
+            }
+
+            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
+
+            savedLists[currentListName] = {
+                data: currentData,
+                ignoredPersons: Array.from(ignoredPersons),
+                groups: currentGroups,
+                settings: {
+                    nameColumn: parseInt(nameColumn.value),
+                    lastNameColumn: parseInt(lastNameColumn.value),
+                    exclusionColumn: parseInt(exclusionColumn.value),
+                    ignoreFirstRow: ignoreFirstRow.checked,
+                    divisionMode: divisionMode.value,
+                    groupValue: parseInt(groupValue.value),
+                    remainderMode: remainderMode.value
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('groupLists', JSON.stringify(savedLists));
+            console.log(`✅ Liste "${currentListName}" automatisch aktualisiert`);
+        }
+
+        function saveLastDistribution() {
+            const lastDistribution = {
+                data: currentData,
+                ignoredPersons: Array.from(ignoredPersons),
+                groups: currentGroups,
+                settings: {
+                    nameColumn: parseInt(nameColumn.value),
+                    lastNameColumn: parseInt(lastNameColumn.value),
+                    exclusionColumn: parseInt(exclusionColumn.value),
+                    ignoreFirstRow: ignoreFirstRow.checked,
+                    divisionMode: divisionMode.value,
+                    groupValue: parseInt(groupValue.value),
+                    remainderMode: remainderMode.value
+                },
+                listName: currentListName,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('lastDistribution', JSON.stringify(lastDistribution));
+        }
+
+        function restoreLastDistribution() {
+            const lastDistribution = JSON.parse(localStorage.getItem('lastDistribution') || '{}');
+
+            if (!lastDistribution.data || lastDistribution.data.length === 0) {
+                return;
+            }
+
+            currentData = lastDistribution.data;
+            ignoredPersons = new Set(lastDistribution.ignoredPersons || []);
+            currentGroups = lastDistribution.groups || [];
+            currentListName = lastDistribution.listName || null;
+
+            // Lade Einstellungen
+            if (lastDistribution.settings) {
+                nameColumn.value = lastDistribution.settings.nameColumn;
+                lastNameColumn.value = lastDistribution.settings.lastNameColumn;
+                exclusionColumn.value = lastDistribution.settings.exclusionColumn;
+                ignoreFirstRow.checked = lastDistribution.settings.ignoreFirstRow;
+                divisionMode.value = lastDistribution.settings.divisionMode;
+                groupValue.value = lastDistribution.settings.groupValue;
+                remainderMode.value = lastDistribution.settings.remainderMode;
+            }
+
+            // Zeige Daten
+            if (currentData.length > 0) {
+                divideBtn.disabled = false;
+                document.getElementById('randomPersonBtn').disabled = false;
+                displayPersonList();
+                fileName.textContent = `📄 ${lastDistribution.listName ? lastDistribution.listName + ' (gespeichert)' : 'Letzte Verteilung'}`;
+            }
+
+            // Zeige Gruppen wenn vorhanden
+            if (currentGroups.length > 0) {
+                displayGroups();
+                exportBtn.disabled = false;
+                document.getElementById('randomGroupBtn').disabled = false;
+            }
+
+            loadSavedLists();
         }
 
         function loadSavedLists() {
@@ -746,13 +873,37 @@
             ignoredPersons = new Set(listData.ignoredPersons || []);
             currentListName = name;
 
+            // Lade gespeicherte Einstellungen
+            if (listData.settings) {
+                nameColumn.value = listData.settings.nameColumn;
+                lastNameColumn.value = listData.settings.lastNameColumn;
+                exclusionColumn.value = listData.settings.exclusionColumn;
+                ignoreFirstRow.checked = listData.settings.ignoreFirstRow;
+                divisionMode.value = listData.settings.divisionMode;
+                groupValue.value = listData.settings.groupValue;
+                remainderMode.value = listData.settings.remainderMode;
+            }
+
+            // Speichere Einstellungen global
+            saveCurrentSettings();
+
             fileName.textContent = `📄 ${name} (gespeichert)`;
             divideBtn.disabled = false;
             document.getElementById('randomPersonBtn').disabled = false;
             displayPersonList();
-            loadSavedLists();
 
-            alert(`✅ Liste "${name}" geladen!`);
+            // Lade gespeicherte Verteilung, falls vorhanden
+            if (listData.groups && listData.groups.length > 0) {
+                currentGroups = listData.groups;
+                displayGroups();
+                exportBtn.disabled = false;
+                document.getElementById('randomGroupBtn').disabled = false;
+                alert(`✅ Liste "${name}" mit Verteilung geladen!`);
+            } else {
+                alert(`✅ Liste "${name}" geladen!`);
+            }
+
+            loadSavedLists();
         }
 
         function deleteList(name) {
@@ -924,6 +1075,17 @@
             document.getElementById('randomGroupBtn').disabled = false;
             displayGroups();
             exportBtn.disabled = false;
+
+            // Speichere automatisch aktuelle Verteilung
+            saveCurrentSettings();
+
+            // Speichere die letzte Verteilung
+            saveLastDistribution();
+
+            // Wenn Liste geladen ist, aktualisiere diese direkt
+            if (currentListName) {
+                updateLoadedList();
+            }
 
             if (totalAttempts > shuffled.length * 10) {
                 alert('⚠️ Hinweis: Einige Ausschlüsse konnten möglicherweise nicht vollständig berücksichtigt werden.');

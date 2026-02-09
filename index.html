@@ -616,7 +616,6 @@
                         divideBtn.disabled = false;
                         document.getElementById('randomPersonBtn').disabled = false;
                         displayPersonList();
-                        alert(`✅ ${currentData.length} Zeilen erfolgreich geladen!`);
                     }
                 } catch (error) {
                     alert('❌ Fehler beim Lesen der Datei: ' + error.message);
@@ -777,7 +776,6 @@
             currentListName = listName;
 
             loadSavedLists();
-            alert(`✅ Liste "${listName}" mit aktueller Verteilung gespeichert!`);
             listNameInput.value = '';
         }
 
@@ -972,7 +970,59 @@
             }
 
             loadSavedLists();
-            alert(`✅ Liste "${name}" gelöscht!`);
+        }
+
+        // Fisher-Yates Shuffle (gleichmäßige Verteilung)
+        function shuffle(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Zähle Konflikte in einer Gruppe
+        function countConflicts(group, person, firstNameCount) {
+            return group.filter(member =>
+                checkExclusion(person, member, firstNameCount) ||
+                checkExclusion(member, person, firstNameCount)
+            ).length;
+        }
+
+        // Finde beste Gruppe für Person
+        function findBestGroup(groups, person, mode, remainder, targetGroupSize, firstNameCount) {
+            const groupSizes = groups.map(g => g.length);
+            const minSize = Math.min(...groupSizes);
+
+            let candidateIndices = groupSizes
+                .map((size, idx) => size === minSize ? idx : -1)
+                .filter(idx => idx !== -1);
+
+            // Enforce target size for 'size' mode
+            if (mode === 'size' && remainder === 'separate' && targetGroupSize) {
+                candidateIndices = candidateIndices.filter(idx => {
+                    const isRemainderGroup = idx === groups.length - 1;
+                    return isRemainderGroup || groups[idx].length < targetGroupSize;
+                });
+                if (candidateIndices.length === 0) {
+                    candidateIndices = [groups.length - 1];
+                }
+            }
+
+            // Finde Gruppe mit wenigsten Konflikten
+            let bestIndex = null;
+            let minConflicts = Infinity;
+
+            for (const idx of candidateIndices) {
+                const conflicts = countConflicts(groups[idx], person, firstNameCount);
+                if (conflicts < minConflicts) {
+                    minConflicts = conflicts;
+                    bestIndex = idx;
+                }
+            }
+
+            return { index: bestIndex, conflicts: minConflicts };
         }
 
         function divideIntoGroups() {
@@ -1061,66 +1111,24 @@
                 if (numGroups === 0) numGroups = 1;
             }
 
-            // Shuffle
-            const shuffled = [...persons].sort(() => Math.random() - 0.5);
-
-            // Initialize groups
+            // Hauptalgorithmus
+            const shuffled = shuffle(persons);
             currentGroups = Array.from({ length: numGroups }, () => []);
 
-            // Assign persons
-            const maxAttempts = 1000;
-            let totalAttempts = 0;
-
             for (const person of shuffled) {
-                let assigned = false;
-                let attempts = 0;
+                const { index, conflicts } = findBestGroup(
+                    currentGroups,
+                    person,
+                    mode,
+                    remainder,
+                    targetGroupSize,
+                    firstNameCount
+                );
 
-                while (!assigned && attempts < maxAttempts) {
-                    attempts++;
-                    totalAttempts++;
+                currentGroups[index].push(person);
 
-                    const groupSizes = currentGroups.map(g => g.length);
-                    const minSize = Math.min(...groupSizes);
-
-                    let candidateIndices = groupSizes
-                        .map((size, idx) => size === minSize ? idx : -1)
-                        .filter(idx => idx !== -1);
-
-                    // For 'size' mode with 'separate', enforce target size
-                    if (mode === 'size' && remainder === 'separate' && targetGroupSize) {
-                        candidateIndices = candidateIndices.filter(idx => {
-                            const isRemainderGroup = idx === numGroups - 1;
-                            if (isRemainderGroup) return true;
-                            return currentGroups[idx].length < targetGroupSize;
-                        });
-
-                        if (candidateIndices.length === 0) {
-                            candidateIndices = [numGroups - 1];
-                        }
-                    }
-
-                    const groupIndex = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
-                    const group = currentGroups[groupIndex];
-
-                    // Check exclusions
-                    const hasExclusion = group.some(member => {
-                        return checkExclusion(person, member, firstNameCount) ||
-                            checkExclusion(member, person, firstNameCount);
-                    });
-
-                    if (!hasExclusion) {
-                        currentGroups[groupIndex].push(person);
-                        assigned = true;
-                    }
-                }
-
-                // Force assignment if needed
-                if (!assigned) {
-                    const groupSizes = currentGroups.map(g => g.length);
-                    const minSize = Math.min(...groupSizes);
-                    const groupIndex = groupSizes.indexOf(minSize);
-                    currentGroups[groupIndex].push(person);
-                    console.warn(`Warnung: ${person.displayName} musste trotz Ausschluss platziert werden`);
+                if (conflicts > 0) {
+                    console.warn(`Warnung: ${person.displayName} hat ${conflicts} Konflikt(e) in Gruppe ${index + 1}`);
                 }
             }
 
@@ -1138,10 +1146,6 @@
             // Wenn Liste geladen ist, aktualisiere diese direkt
             if (currentListName) {
                 updateLoadedList();
-            }
-
-            if (totalAttempts > shuffled.length * 10) {
-                alert('⚠️ Hinweis: Einige Ausschlüsse konnten möglicherweise nicht vollständig berücksichtigt werden.');
             }
         }
 

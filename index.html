@@ -1025,6 +1025,157 @@
             return { index: bestIndex, conflicts: minConflicts };
         }
 
+        // Berechne Gesamtkonflikte einer Gruppenlösung
+        function calculateTotalConflicts(groups, firstNameCount) {
+            return groups.reduce((sum, group) => {
+                return sum + group.reduce((groupSum, person) =>
+                    groupSum + countConflicts(group, person, firstNameCount), 0
+                );
+            }, 0) / 2; // Durch 2, weil jeder Konflikt doppelt gezählt wird
+        }
+
+        // Hauptalgorithmus mit Backtracking
+        function assignGroupsWithBacktracking(
+            persons,
+            numGroups,
+            mode,
+            remainder,
+            targetGroupSize,
+            firstNameCount,
+            maxAttempts = 10
+        ) {
+            let bestSolution = null;
+            let minTotalConflicts = Infinity;
+            let attemptResults = [];
+
+            // Probiere mehrere Durchläufe mit unterschiedlichen Shuffles
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const groups = Array.from({ length: numGroups }, () => []);
+                const shuffled = shuffle(persons);
+
+                // Weise Personen zu
+                for (const person of shuffled) {
+                    const { index } = findBestGroup(
+                        groups,
+                        person,
+                        mode,
+                        remainder,
+                        targetGroupSize,
+                        firstNameCount
+                    );
+                    groups[index].push(person);
+                }
+
+                // Zähle Gesamtkonflikte
+                const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
+
+                attemptResults.push({
+                    attempt: attempt + 1,
+                    conflicts: totalConflicts
+                });
+
+                // Speichere beste Lösung
+                if (totalConflicts < minTotalConflicts) {
+                    minTotalConflicts = totalConflicts;
+                    bestSolution = groups.map(g => [...g]);
+                }
+
+                // Perfekte Lösung gefunden - abbrechen
+                if (totalConflicts === 0) {
+                    console.log(`✓ Perfekte Lösung ohne Konflikte gefunden (Versuch ${attempt + 1}/${maxAttempts})`);
+                    break;
+                }
+            }
+
+            // Logging für Debugging
+            console.log('Backtracking-Ergebnisse:', attemptResults);
+            console.log(`Beste Lösung: ${minTotalConflicts} Konflikt(e)`);
+
+            return {
+                groups: bestSolution,
+                totalConflicts: minTotalConflicts,
+                attempts: attemptResults
+            };
+        }
+
+        // Adaptive Backtracking-Strategie
+        function assignGroupsAdaptive(
+            persons,
+            numGroups,
+            mode,
+            remainder,
+            targetGroupSize,
+            firstNameCount
+        ) {
+            const startTime = performance.now();
+            const maxTime = 700; // Maximale Zeit in ms (0,7 Sekunden)
+            const minAttempts = 5;
+            const maxAttempts = 1000;
+            const maxNoImprovement = 700;
+
+            let bestSolution = null;
+            let minTotalConflicts = Infinity;
+            let attempt = 0;
+            let noImprovementCount = 0;
+
+            while (attempt < maxAttempts) {
+                attempt++;
+
+                // Zeitlimit prüfen
+                if (attempt > minAttempts && performance.now() - startTime > maxTime) {
+                    console.log(`Zeit-Limit erreicht nach ${attempt} Versuchen`);
+                    break;
+                }
+
+                const groups = Array.from({ length: numGroups }, () => []);
+                const shuffled = shuffle(persons);
+
+                for (const person of shuffled) {
+                    const { index } = findBestGroup(
+                        groups,
+                        person,
+                        mode,
+                        remainder,
+                        targetGroupSize,
+                        firstNameCount
+                    );
+                    groups[index].push(person);
+                }
+
+                const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
+
+                if (totalConflicts < minTotalConflicts) {
+                    minTotalConflicts = totalConflicts;
+                    bestSolution = groups.map(g => [...g]);
+                    noImprovementCount = 0;
+
+                    // Perfekte Lösung - sofort beenden
+                    if (totalConflicts === 0) {
+                        console.log(`✓ Perfekte Lösung gefunden (Versuch ${attempt})`);
+                        break;
+                    }
+                } else {
+                    noImprovementCount++;
+                }
+
+                // Abbrechen wenn keine Verbesserung mehr
+                if (noImprovementCount >= maxNoImprovement && attempt >= minAttempts) {
+                    console.log(`Keine Verbesserung nach ${noImprovementCount} Versuchen`);
+                    break;
+                }
+            }
+
+            const duration = performance.now() - startTime;
+            console.log(`Backtracking abgeschlossen: ${attempt} Versuche in ${duration.toFixed(0)}ms`);
+
+            return {
+                groups: bestSolution,
+                totalConflicts: minTotalConflicts,
+                attempts: attempt,
+                duration: duration
+            };
+        }
+
         function divideIntoGroups() {
             if (currentData.length === 0) {
                 alert('Bitte zuerst eine Datei laden!');
@@ -1112,25 +1263,10 @@
             }
 
             // Hauptalgorithmus
-            const shuffled = shuffle(persons);
-            currentGroups = Array.from({ length: numGroups }, () => []);
+            <!-- const result = assignGroupsWithBacktracking(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, 20); -->
+            const result = assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount);
 
-            for (const person of shuffled) {
-                const { index, conflicts } = findBestGroup(
-                    currentGroups,
-                    person,
-                    mode,
-                    remainder,
-                    targetGroupSize,
-                    firstNameCount
-                );
-
-                currentGroups[index].push(person);
-
-                if (conflicts > 0) {
-                    console.warn(`Warnung: ${person.displayName} hat ${conflicts} Konflikt(e) in Gruppe ${index + 1}`);
-                }
-            }
+            currentGroups = result.groups;
 
             document.getElementById('randomGroupBtn').disabled = false;
             document.getElementById('deleteGroupsBtn').disabled = false;
@@ -1146,6 +1282,31 @@
             // Wenn Liste geladen ist, aktualisiere diese direkt
             if (currentListName) {
                 updateLoadedList();
+            }
+
+            if (result.totalConflicts > 0) {
+                console.warn(`⚠ Gruppeneinteilung enthält ${result.totalConflicts} Konflikt(e)`);
+
+                // Zeige Details pro Gruppe
+                currentGroups.forEach((group, idx) => {
+                    const groupConflicts = group.reduce((sum, person) =>
+                        sum + countConflicts(group, person, firstNameCount), 0
+                    ) / 2;
+
+                    if (groupConflicts > 0) {
+                        console.warn(`  Gruppe ${idx + 1}: ${groupConflicts} Konflikt(e)`);
+
+                        // Zeige welche Personen betroffen sind
+                        group.forEach(person => {
+                            const conflicts = countConflicts(group, person, firstNameCount);
+                            if (conflicts > 0) {
+                                console.warn(`    - ${person.displayName}: ${conflicts} Ausschluss-Konflikt(e)`);
+                            }
+                        });
+                    }
+                });
+            } else {
+                console.log('✓ Alle Ausschlüsse wurden erfolgreich berücksichtigt!');
             }
         }
 

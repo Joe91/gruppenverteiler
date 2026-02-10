@@ -1,3 +1,4 @@
+[file content begin]
 <!DOCTYPE html>
 <html lang="de">
 
@@ -681,31 +682,33 @@
             transition: width 0.3s ease;
         }
 
-        /* Conflict Indicator */
-        .conflict-badge {
-            display: inline-block;
-            background: var(--danger);
-            color: white;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin-left: 8px;
-            vertical-align: middle;
-            animation: pulse 2s infinite;
+        /* Exclusions Toggle */
+        .exclusions-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
         }
 
-        @keyframes pulse {
-            0% {
-                opacity: 0.7;
-            }
+        .exclusions-toggle:hover {
+            background: var(--border);
+        }
 
-            50% {
-                opacity: 1;
-            }
+        .exclusions-info {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-left: 8px;
+            display: none;
+        }
 
-            100% {
-                opacity: 0.7;
-            }
+        .exclusions-info.show {
+            display: inline;
         }
 
         /* Responsive */
@@ -866,8 +869,11 @@
         <div class="card" id="personListCard" style="display: none;">
             <div class="card-header">
                 <span class="card-icon">👥</span>
-                <h2>Personen ignorieren <span id="conflictBadge" class="conflict-badge"
-                        style="display: none;">Konflikte</span></h2>
+                <h2>Personen ignorieren</h2>
+                <div class="exclusions-toggle" id="toggleExclusions">
+                    <span>👁️</span>
+                    <span id="exclusionsToggleText">Ausschlüsse anzeigen</span>
+                </div>
             </div>
 
             <div class="person-stats">
@@ -883,17 +889,12 @@
                     <div class="stat-value" id="ignoredCount">0</div>
                     <div class="stat-label">Ignoriert</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="conflictCount">0</div>
-                    <div class="stat-label">Konflikte</div>
-                </div>
             </div>
 
             <div id="personList" class="person-grid"></div>
 
             <div class="action-buttons" style="margin-top: 20px;">
                 <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
-                <button class="btn btn-secondary" id="analyzeConflictsBtn">🔍 Konflikte analysieren</button>
             </div>
         </div>
 
@@ -953,8 +954,6 @@
             <div class="card-header">
                 <span class="card-icon">🎯</span>
                 <h2>Gruppeneinteilung</h2>
-                <span id="conflictSummary"
-                    style="margin-left: auto; font-size: 0.9rem; color: var(--text-secondary);"></span>
             </div>
 
             <div id="groupsContainer" class="groups-container"></div>
@@ -975,7 +974,6 @@
             <div class="action-buttons">
                 <button class="btn btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
                 <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
-                <button class="btn btn-secondary" id="randomPairBtn" disabled>👫 Zufälliges Paar</button>
             </div>
 
             <div id="randomResult" class="random-result"></div>
@@ -998,6 +996,7 @@
         let firstNameCount = {};
         let currentFileData = null;
         let isLoadingList = false;
+        let showExclusions = false; // Standardmäßig ausgeblendet
 
         // LocalStorage keys
         const STORAGE_KEYS = {
@@ -1258,35 +1257,12 @@
             };
         }
 
-        // Update conflict display
-        function updateConflictDisplay() {
-            const conflictAnalysis = analyzeConflicts();
-            const conflictBadge = document.getElementById('conflictBadge');
-            const conflictCount = document.getElementById('conflictCount');
-
-            if (conflictAnalysis.hasConflicts) {
-                conflictBadge.style.display = 'inline-block';
-                conflictBadge.textContent = `${conflictAnalysis.totalConflicts} Konflikt(e)`;
-                conflictCount.textContent = conflictAnalysis.totalConflicts;
-
-                // Show warning in groups card if conflicts exist
-                const conflictSummary = document.getElementById('conflictSummary');
-                if (conflictSummary) {
-                    conflictSummary.textContent = `⚠ ${conflictAnalysis.totalConflicts} Konflikt(e) in Ausschlüssen`;
-                    conflictSummary.style.color = 'var(--warning)';
-                }
-            } else {
-                conflictBadge.style.display = 'none';
-                conflictCount.textContent = '0';
-
-                const conflictSummary = document.getElementById('conflictSummary');
-                if (conflictSummary) {
-                    conflictSummary.textContent = '✓ Keine Konflikte';
-                    conflictSummary.style.color = 'var(--success)';
-                }
-            }
-
-            return conflictAnalysis;
+        // Toggle exclusions display
+        function toggleExclusionsDisplay() {
+            showExclusions = !showExclusions;
+            const toggleText = document.getElementById('exclusionsToggleText');
+            toggleText.textContent = showExclusions ? 'Ausschlüsse ausblenden' : 'Ausschlüsse anzeigen';
+            renderPersonList();
         }
 
         // Save state to localStorage
@@ -1376,7 +1352,6 @@
                         renderGroups();
                         groupsCard.style.display = 'block';
                         document.getElementById('randomGroupBtn').disabled = false;
-                        document.getElementById('randomPairBtn').disabled = false;
                     }
                 }
 
@@ -1571,7 +1546,6 @@
             groupsCard.style.display = 'none';
             updateStats();
             updateFileDisplay();
-            updateConflictDisplay();
             saveState();
             loadSavedLists();
         }
@@ -1579,9 +1553,9 @@
         // Render person list
         function renderPersonList() {
             personList.innerHTML = people.map((person, index) => {
-                let conflictInfo = '';
-                if (person.exclusions && person.exclusions.length > 0) {
-                    conflictInfo = `<span style="font-size: 0.8em; color: var(--text-secondary); margin-left: 8px;">(${person.exclusions.length} Ausschluss${person.exclusions.length !== 1 ? 'e' : ''})</span>`;
+                let exclusionInfo = '';
+                if (showExclusions && person.exclusions && person.exclusions.length > 0) {
+                    exclusionInfo = `<span class="exclusions-info show" style="font-size: 0.8em; color: var(--text-secondary); margin-left: 8px;">(schließt aus: ${person.exclusions.join(', ')})</span>`;
                 }
 
                 return `
@@ -1589,7 +1563,7 @@
                         <input type="checkbox" class="person-checkbox" 
                                ${person.ignored ? 'checked' : ''} 
                                onchange="togglePerson(${index})">
-                        <span>${person.displayName}${conflictInfo}</span>
+                        <span>${person.displayName}${exclusionInfo}</span>
                     </div>
                 `;
             }).join('');
@@ -1602,7 +1576,6 @@
             people[index].ignored = !people[index].ignored;
             renderPersonList();
             updateRestModeHint();
-            updateConflictDisplay();
             saveState();
         }
 
@@ -1622,29 +1595,8 @@
             people.forEach(p => p.ignored = false);
             renderPersonList();
             updateRestModeHint();
-            updateConflictDisplay();
             saveState();
             showToast('Alle Personen wurden aktiviert');
-        });
-
-        // Analyze conflicts button
-        document.getElementById('analyzeConflictsBtn').addEventListener('click', () => {
-            const conflictAnalysis = analyzeConflicts();
-
-            if (conflictAnalysis.totalConflicts === 0) {
-                showToast('Keine Konflikte in den Ausschlüssen gefunden!', 'success');
-            } else {
-                let message = `${conflictAnalysis.totalConflicts} Konflikt(e) gefunden:\n`;
-                conflictAnalysis.conflictPairs.slice(0, 5).forEach(pair => {
-                    message += `• ${pair.person1} ↔ ${pair.person2}\n`;
-                });
-
-                if (conflictAnalysis.conflictPairs.length > 5) {
-                    message += `... und ${conflictAnalysis.conflictPairs.length - 5} weitere`;
-                }
-
-                showToast(message, 'warning');
-            }
         });
 
         // Distribute groups with advanced algorithm
@@ -1730,17 +1682,6 @@
 
             if (result.totalConflicts > 0) {
                 showToast(`Gruppen eingeteilt (${result.totalConflicts} Konflikt(e) gefunden)`, 'warning');
-
-                // Log conflict details
-                groups.forEach((group, idx) => {
-                    const groupConflicts = group.reduce((sum, person) =>
-                        sum + countConflicts(group, person, firstNameCount), 0
-                    ) / 2;
-
-                    if (groupConflicts > 0) {
-                        console.warn(`  Gruppe ${idx + 1}: ${groupConflicts} Konflikt(e)`);
-                    }
-                });
             } else {
                 showToast('Gruppen erfolgreich eingeteilt!');
             }
@@ -1748,8 +1689,6 @@
             renderGroups();
             groupsCard.style.display = 'block';
             document.getElementById('randomGroupBtn').disabled = false;
-            document.getElementById('randomPairBtn').disabled = false;
-            updateConflictDisplay();
             saveState();
         });
 
@@ -1757,7 +1696,6 @@
         function renderGroups() {
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
-                // Entfernt: Konflikte-Anzeige aus den Gruppen
                 const members = group.map(p => {
                     return `<div class="group-member">${p.displayName}</div>`;
                 }).join('');
@@ -1813,7 +1751,6 @@
                 groups = [];
                 groupsCard.style.display = 'none';
                 document.getElementById('randomGroupBtn').disabled = true;
-                document.getElementById('randomPairBtn').disabled = true;
                 saveState();
                 showToast('Gruppeneinteilung gelöscht');
             }
@@ -1847,33 +1784,6 @@
             result.innerHTML = `
                 <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
                 <div style="font-size: 0.9em;">${members}</div>
-            `;
-            result.classList.remove('show');
-            setTimeout(() => result.classList.add('show'), 10);
-        });
-
-        // Random pair
-        document.getElementById('randomPairBtn').addEventListener('click', () => {
-            const activePeople = people.filter(p => !p.ignored);
-            if (activePeople.length < 2) {
-                showToast('Nicht genügend aktive Personen für ein Paar!', 'warning');
-                return;
-            }
-
-            // Get two random different people
-            const index1 = Math.floor(Math.random() * activePeople.length);
-            let index2;
-            do {
-                index2 = Math.floor(Math.random() * activePeople.length);
-            } while (index2 === index1);
-
-            const person1 = activePeople[index1];
-            const person2 = activePeople[index2];
-
-            const result = document.getElementById('randomResult');
-            result.innerHTML = `
-                <div style="font-size: 1.2em; margin-bottom: 10px;">👫 Zufälliges Paar</div>
-                <div style="font-size: 0.9em;">${person1.displayName} & ${person2.displayName}</div>
             `;
             result.classList.remove('show');
             setTimeout(() => result.classList.add('show'), 10);
@@ -2045,11 +1955,9 @@
                 renderGroups();
                 groupsCard.style.display = 'block';
                 document.getElementById('randomGroupBtn').disabled = false;
-                document.getElementById('randomPairBtn').disabled = false;
             } else {
                 groupsCard.style.display = 'none';
                 document.getElementById('randomGroupBtn').disabled = true;
-                document.getElementById('randomPairBtn').disabled = true;
             }
 
             // Zufalls-Person-Feld zurücksetzen
@@ -2057,9 +1965,6 @@
 
             // Update file display
             updateFileDisplay();
-
-            // Update conflict display
-            updateConflictDisplay();
 
             // Save as current list
             localStorage.setItem('currentListName', name);
@@ -2126,6 +2031,9 @@
         loadSavedLists();
         loadState();
 
+        // Add event listener for exclusions toggle
+        document.getElementById('toggleExclusions').addEventListener('click', toggleExclusionsDisplay);
+
         // Show welcome message
         setTimeout(() => {
             if (people.length === 0) {
@@ -2136,3 +2044,4 @@
 </body>
 
 </html>
+[file content end]

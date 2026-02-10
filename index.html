@@ -1,4 +1,3 @@
-[file content begin]
 <!DOCTYPE html>
 <html lang="de">
 
@@ -629,10 +628,38 @@
             margin-top: 16px;
             display: none;
             animation: popIn 0.5s ease;
+            position: relative;
         }
 
         .random-result.show {
             display: block;
+        }
+
+        /* Random Clear Button */
+        .random-clear-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.4rem;
+            padding: 4px 10px;
+            border-radius: 50%;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .random-clear-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
         @keyframes popIn {
@@ -989,7 +1016,10 @@
                 <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
             </div>
 
-            <div id="randomResult" class="random-result"></div>
+            <div id="randomResult" class="random-result" style="display: none;">
+                <div id="randomResultContent"></div>
+                <button id="clearRandomBtn" class="random-clear-btn">✕</button>
+            </div>
         </div>
     </div>
 
@@ -1009,9 +1039,7 @@
         let firstNameCount = {};
         let currentFileData = null;
         let isLoadingList = false;
-        let showExclusions = false; // Standardmäßig ausgeblendet
-        let hasUnsavedChanges = false;
-        let unsavedData = null;
+        let showExclusions = false;
 
         // LocalStorage keys
         const STORAGE_KEYS = {
@@ -1097,13 +1125,9 @@
         function checkExclusion(person, member, firstNameCount) {
             return person.exclusions.some(exclusion => {
                 const exc = exclusion.trim();
-                // Check exact match with display name
                 if (exc === member.displayName) return true;
-                // Check first name only (if unique)
                 if (exc === member.firstName && firstNameCount[member.firstName] === 1) return true;
-                // Check full name
                 if (member.lastName && exc === `${member.firstName} ${member.lastName}`) return true;
-                // Check with abbreviated last name
                 if (member.lastName && exc === `${member.firstName} ${member.lastName.substring(0, 3)}.`) return true;
                 return false;
             });
@@ -1123,7 +1147,7 @@
                 return sum + group.reduce((groupSum, person) =>
                     groupSum + countConflicts(group, person, firstNameCount), 0
                 );
-            }, 0) / 2; // Divide by 2 because each conflict is counted twice
+            }, 0) / 2;
         }
 
         // Find best group for a person
@@ -1135,7 +1159,6 @@
                 .map((size, idx) => size === minSize ? idx : -1)
                 .filter(idx => idx !== -1);
 
-            // Enforce target size for 'size' mode with separate remainder
             if (mode === 'size' && remainder === 'separate' && targetGroupSize) {
                 candidateIndices = candidateIndices.filter(idx => {
                     const isRemainderGroup = idx === groups.length - 1;
@@ -1146,7 +1169,6 @@
                 }
             }
 
-            // Find group with least conflicts
             let bestIndex = null;
             let minConflicts = Infinity;
 
@@ -1161,14 +1183,14 @@
             return { index: bestIndex, conflicts: minConflicts };
         }
 
-        // Adaptive backtracking algorithm (from index.html)
+        // Adaptive backtracking algorithm
         function assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, onProgress = null) {
             const startTime = performance.now();
-            const maxTime = 700; // Feste Zeit: 0,7 Sekunden
+            const maxTime = 700;
             const minAttempts = 3;
-            const maxAttempts = 1000; // Feste Anzahl: 1000 Versuche
+            const maxAttempts = 1000;
             const maxNoImprovement = 800;
-            const prioritizeNoConflicts = false; // Immer false
+            const prioritizeNoConflicts = false;
 
             let bestSolution = null;
             let minTotalConflicts = Infinity;
@@ -1178,12 +1200,10 @@
             while (attempt < maxAttempts) {
                 attempt++;
 
-                // Update progress
                 if (onProgress) {
                     onProgress(Math.min(100, (attempt / maxAttempts) * 100));
                 }
 
-                // Check time limit
                 if (attempt > minAttempts && performance.now() - startTime > maxTime) {
                     console.log(`Time limit reached after ${attempt} attempts`);
                     break;
@@ -1204,14 +1224,12 @@
                     if (index !== null) {
                         groups[index].push(person);
                     } else {
-                        // Fallback: add to first group
                         groups[0].push(person);
                     }
                 }
 
                 const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
 
-                // Prioritize conflict-free solutions
                 const solutionValue = prioritizeNoConflicts && totalConflicts === 0 ? -1 : totalConflicts;
 
                 if (solutionValue < minTotalConflicts) {
@@ -1219,7 +1237,6 @@
                     bestSolution = groups.map(g => [...g]);
                     noImprovementCount = 0;
 
-                    // Perfect solution found - stop immediately
                     if (totalConflicts === 0 && prioritizeNoConflicts) {
                         console.log(`✓ Perfect solution found (attempt ${attempt})`);
                         break;
@@ -1228,7 +1245,6 @@
                     noImprovementCount++;
                 }
 
-                // Stop if no improvement
                 if (noImprovementCount >= maxNoImprovement && attempt >= minAttempts) {
                     console.log(`No improvement after ${noImprovementCount} attempts`);
                     break;
@@ -1288,16 +1304,13 @@
         // Save state to localStorage
         function saveState() {
             try {
-                // Speichere immer die aktuelle Liste als aktiv
                 if (currentListName) {
                     localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
                 }
 
-                // Automatisch speichern, wenn es eine aktive Liste gibt
                 if (currentListName) {
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
-                    // Wenn es eine TEMP-Liste ist, aktualisieren
                     if (currentListName.startsWith('[TEMP] ')) {
                         lists[currentListName] = {
                             people: people,
@@ -1315,7 +1328,6 @@
                             isTemp: true
                         };
                     } else if (currentListName.startsWith('[SAVED] ')) {
-                        // Gespeicherte Liste aktualisieren
                         lists[currentListName] = {
                             people: people,
                             groups: groups,
@@ -1336,7 +1348,6 @@
                     localStorage.setItem('savedLists', JSON.stringify(lists));
                 }
 
-                // Einstellungen immer speichern
                 const settings = {
                     colFirstName: document.getElementById('colFirstName').value,
                     colLastName: document.getElementById('colLastName').value,
@@ -1353,97 +1364,33 @@
             }
         }
 
-        // Update unsaved notice visibility
-        function updateUnsavedNotice() {
-            const notice = document.getElementById('unsavedNotice');
-            if (hasUnsavedChanges && !currentListName) {
-                notice.style.display = 'flex';
-            } else {
-                notice.style.display = 'none';
-            }
-        }
-
-        // Save unsaved list as new list
-        function saveUnsavedList() {
-            const name = prompt("Bitte geben Sie einen Namen für die Liste ein:",
-                currentFileData ? currentFileData.name.replace(/\.[^/.]+$/, "") : "Neue Liste");
-            if (!name) return;
-
-            document.getElementById('listName').value = name;
-            document.getElementById('saveListBtn').click();
-        }
-
-        // Load unsaved data
-        function loadUnsavedData() {
-            try {
-                const saved = localStorage.getItem('gruppenverteiler_unsaved');
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    unsavedData = data;
-
-                    people = data.people || [];
-                    groups = data.groups || [];
-                    currentFileData = data.fileData || null;
-
-                    // Recalculate firstNameCount
-                    firstNameCount = {};
-                    people.forEach(person => {
-                        firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
-                    });
-
-                    // Update display names
-                    people.forEach(person => {
-                        if (firstNameCount[person.firstName] > 1 && person.lastName) {
-                            const lastNamePart = person.lastName.substring(0, 3);
-                            person.displayName = `${person.firstName} ${lastNamePart}.`;
-                        } else {
-                            person.displayName = person.firstName;
-                        }
-                    });
-
-                    return true;
-                }
-            } catch (e) {
-                console.error('Error loading unsaved data:', e);
-            }
-            return false;
-        }
-
         // Load state from localStorage
         function loadState() {
             try {
-                // Zuerst versuchen, die aktive Liste zu laden
                 const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
 
                 if (savedListName) {
-                    // Überprüfen, ob die gespeicherte Liste existiert
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
                     if (lists[savedListName]) {
-                        // Die aktive Liste existiert - sie laden
-                        loadList(savedListName, true); // Silent load on startup
+                        loadList(savedListName, true);
                         return;
                     } else {
-                        // Die gespeicherte Liste existiert nicht mehr (wurde gelöscht)
                         console.log(`Gespeicherte Liste "${savedListName}" wurde nicht gefunden`);
                         localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
                     }
                 }
 
-                // Falls keine aktive Liste oder sie nicht existiert:
-                // Versuche unsaved Daten zu laden
                 const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
                 if (savedPeople) {
                     people = JSON.parse(savedPeople);
                     if (people.length > 0) {
-                        // Unsaved Daten gefunden - als TEMP-Liste anzeigen
                         currentListName = '[TEMP] Letzte Änderungen';
                         firstNameCount = {};
                         people.forEach(person => {
                             firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
                         });
 
-                        // Update display names
                         people.forEach(person => {
                             if (firstNameCount[person.firstName] > 1 && person.lastName) {
                                 const lastNamePart = person.lastName.substring(0, 3);
@@ -1462,7 +1409,6 @@
                     }
                 }
 
-                // Lade Gruppen, falls vorhanden
                 const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
                 if (savedGroups) {
                     groups = JSON.parse(savedGroups);
@@ -1473,7 +1419,6 @@
                     }
                 }
 
-                // Lade Einstellungen
                 const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
@@ -1498,7 +1443,6 @@
                     }
                 }
 
-                // Lade gespeicherte Listen
                 loadSavedLists();
 
             } catch (e) {
@@ -1638,7 +1582,6 @@
                 const exclusions = colExcl >= 0 && row[colExcl] ?
                     row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e) : [];
 
-                // Count first names for duplicate handling
                 firstNameCount[firstName] = (firstNameCount[firstName] || 0) + 1;
 
                 people.push({
@@ -1650,7 +1593,6 @@
                 });
             }
 
-            // Create display names
             people.forEach(person => {
                 if (firstNameCount[person.firstName] > 1 && person.lastName) {
                     const lastNamePart = person.lastName.substring(0, 3);
@@ -1660,10 +1602,9 @@
                 }
             });
 
-            // Automatisch als temporäre Liste speichern mit Dateinamen
             const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
             const fileName = currentFileData?.name || 'Neue Liste';
-            const baseName = fileName.replace(/\.[^/.]+$/, ""); // Extension entfernen
+            const baseName = fileName.replace(/\.[^/.]+$/, "");
             currentListName = `[TEMP] ${baseName} (${timestamp})`;
 
             renderPersonList();
@@ -1675,10 +1616,7 @@
             updateStats();
             updateFileDisplay();
 
-            // Automatisch als temporäre Liste speichern
             autoSaveAsTempList();
-
-            // Saved Lists aktualisieren
             loadSavedLists();
         }
 
@@ -1688,10 +1626,8 @@
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
-            // Check if this is a new temp list (not already saved with [SAVED] prefix)
             const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
             if (lists[savedVersionName]) {
-                // Es gibt bereits eine gespeicherte Version, diese verwenden
                 currentListName = savedVersionName;
                 lists[currentListName] = {
                     people: people,
@@ -1709,7 +1645,6 @@
                     isTemp: false
                 };
             } else {
-                // Neue temporäre Liste speichern
                 lists[currentListName] = {
                     people: people,
                     groups: groups,
@@ -1760,41 +1695,6 @@
             saveState();
         }
 
-        // Render person list
-        // Automatisch als temporäre Liste speichern
-        function autoSaveAsTempList() {
-            if (!currentListName || currentListName.startsWith('[SAVED] ')) return;
-
-            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
-
-            // Check if this is a new temp list (not already saved with [SAVED] prefix)
-            const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
-            if (lists[savedVersionName]) {
-                // Es gibt bereits eine gespeicherte Version, diese verwenden
-                currentListName = savedVersionName;
-            }
-
-            // Liste speichern
-            lists[currentListName] = {
-                people: people,
-                groups: groups,
-                settings: {
-                    colFirstName: document.getElementById('colFirstName').value,
-                    colLastName: document.getElementById('colLastName').value,
-                    colExclusions: document.getElementById('colExclusions').value,
-                    skipFirstRow: document.getElementById('skipFirstRow').checked,
-                    mode: document.querySelector('input[name="mode"]:checked').value,
-                    distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value
-                },
-                timestamp: new Date().toISOString(),
-                isTemp: currentListName.startsWith('[TEMP] ')
-            };
-
-            localStorage.setItem('savedLists', JSON.stringify(lists));
-            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
-        }
-
         // Update stats
         function updateStats() {
             const total = people.length;
@@ -1828,13 +1728,11 @@
             const value = parseInt(document.getElementById('distributionValue').value);
             const remainderMode = document.querySelector('input[name="restMode"]:checked').value;
 
-            // Prepare persons for distribution
             const personsForDistribution = activePeople.map((person, index) => ({
                 ...person,
                 index: index
             }));
 
-            // Calculate number of groups
             let numGroups;
             let targetGroupSize = null;
 
@@ -1852,18 +1750,15 @@
                 if (numGroups === 0) numGroups = 1;
             }
 
-            // Show progress bar
             const progressBar = document.getElementById('distributionProgress');
             const progressFill = progressBar.querySelector('.progress-fill');
             progressBar.style.display = 'block';
 
-            // Disable button during distribution
             const distributeBtn = document.getElementById('distributeBtn');
             const originalText = distributeBtn.innerHTML;
             distributeBtn.innerHTML = '<span class="loading"></span> Berechne...';
             distributeBtn.disabled = true;
 
-            // Use adaptive backtracking algorithm with progress updates
             const result = await new Promise(resolve => {
                 setTimeout(() => {
                     const result = assignGroupsAdaptive(
@@ -1881,10 +1776,8 @@
                 }, 100);
             });
 
-            // Store groups
             groups = result.groups || [];
 
-            // Hide progress bar
             setTimeout(() => {
                 progressFill.style.width = '0%';
                 setTimeout(() => {
@@ -1892,7 +1785,6 @@
                 }, 300);
             }, 500);
 
-            // Re-enable button
             distributeBtn.innerHTML = originalText;
             distributeBtn.disabled = false;
 
@@ -1935,10 +1827,8 @@
             const ws_data = [];
             const maxLength = Math.max(...groups.map(g => g.length));
 
-            // Header
             ws_data.push(groups.map((_, i) => `Gruppe ${i + 1}`));
 
-            // Data
             for (let i = 0; i < maxLength; i++) {
                 ws_data.push(groups.map(g => {
                     if (g[i]) {
@@ -1972,7 +1862,7 @@
             }
         });
 
-        // Random person - NICHT SCROLLEN
+        // Random person
         document.getElementById('randomPersonBtn').addEventListener('click', () => {
             const activePeople = people.filter(p => !p.ignored);
             if (activePeople.length === 0) {
@@ -1983,15 +1873,16 @@
             const randomPerson = activePeople[Math.floor(Math.random() * activePeople.length)];
 
             const result = document.getElementById('randomResult');
-            result.textContent = `👤 ${randomPerson.displayName}`;
+            const content = document.getElementById('randomResultContent');
+            content.textContent = `👤 ${randomPerson.displayName}`;
 
-            // NICHT: result.classList.remove('show'); und dann setTimeout
-            // Stattdessen: direkt anzeigen ohne Animation, die scrollt
             result.style.display = 'block';
-            result.classList.add('show');
+            setTimeout(() => {
+                result.classList.add('show');
+            }, 10);
         });
 
-        // Random group - NICHT SCROLLEN
+        // Random group
         document.getElementById('randomGroupBtn').addEventListener('click', () => {
             if (groups.length === 0) return;
 
@@ -2000,15 +1891,27 @@
             const members = randomGroup.map(p => p.displayName).join(', ');
 
             const result = document.getElementById('randomResult');
-            result.innerHTML = `
-        <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
-        <div style="font-size: 0.9em;">${members}</div>
-    `;
+            const content = document.getElementById('randomResultContent');
+            content.innerHTML = `
+                <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
+                <div style="font-size: 0.9em;">${members}</div>
+            `;
 
-            // NICHT: result.classList.remove('show'); und dann setTimeout
-            // Stattdessen: direkt anzeigen ohne Animation, die scrollt
             result.style.display = 'block';
-            result.classList.add('show');
+            setTimeout(() => {
+                result.classList.add('show');
+            }, 10);
+        });
+
+        // Clear random result - KORRIGIERTE VERSION
+        document.getElementById('clearRandomBtn').addEventListener('click', () => {
+            const result = document.getElementById('randomResult');
+            result.classList.remove('show');
+
+            // Warten bis die Animation beendet ist, dann display: none setzen
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 5); // Nur ganz kurz
         });
 
         // Save list
@@ -2016,7 +1919,6 @@
             let name = document.getElementById('listName').value.trim();
 
             if (!name) {
-                // Wenn kein Name eingegeben, verwende den aktuellen Namen ohne TEMP-Präfix
                 if (currentListName && currentListName.startsWith('[TEMP] ')) {
                     name = currentListName.replace('[TEMP] ', '');
                 } else if (currentListName && currentListName.startsWith('[SAVED] ')) {
@@ -2028,18 +1930,15 @@
 
             const savedName = `[SAVED] ${name}`;
 
-            // Check if name already exists
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             if (lists[savedName] && !confirm(`Liste "${name}" existiert bereits. Überschreiben?`)) {
                 return;
             }
 
-            // Alte TEMP-Liste löschen, falls vorhanden
             if (currentListName && currentListName !== savedName) {
                 delete lists[currentListName];
             }
 
-            // Neue SAVED-Liste erstellen
             lists[savedName] = {
                 people: people,
                 groups: groups,
@@ -2060,7 +1959,6 @@
             currentListName = savedName;
             document.getElementById('listName').value = '';
 
-            // Save current list name
             localStorage.setItem('currentListName', savedName);
 
             loadSavedLists();
@@ -2092,12 +1990,11 @@
 
             savedListsCard.style.display = 'block';
 
-            // Sortiere Listen: Zuerst gespeicherte, dann temporäre
             const sortedListNames = Object.keys(lists).sort((a, b) => {
                 const aIsTemp = lists[a].isTemp;
                 const bIsTemp = lists[b].isTemp;
-                if (aIsTemp && !bIsTemp) return 1; // TEMP nach unten
-                if (!aIsTemp && bIsTemp) return -1; // SAVED nach oben
+                if (aIsTemp && !bIsTemp) return 1;
+                if (!aIsTemp && bIsTemp) return -1;
                 return 0;
             });
 
@@ -2108,7 +2005,6 @@
                 const personCount = list.people ? list.people.length : 0;
                 const isTemp = list.isTemp === true;
 
-                // Unterschiedliche Icons für TEMP vs SAVED
                 const icon = isTemp ? '📝' : '💾';
                 const tempBadge = isTemp ? '<span style="font-size: 0.7em; color: var(--warning); background: rgba(243, 156, 18, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">TEMP</span>' : '';
 
@@ -2144,20 +2040,16 @@
 
             isLoadingList = true;
 
-            // Load people
             people = list.people || [];
             currentListName = name;
 
-            // Save as active list immediately
             localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, name);
 
-            // Update firstNameCount
             firstNameCount = {};
             people.forEach(person => {
                 firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
             });
 
-            // Update display names
             people.forEach(person => {
                 if (firstNameCount[person.firstName] > 1 && person.lastName) {
                     const lastNamePart = person.lastName.substring(0, 3);
@@ -2167,10 +2059,8 @@
                 }
             });
 
-            // Load groups if available
             groups = list.groups || [];
 
-            // Apply settings
             if (list.settings) {
                 document.getElementById('colFirstName').value = list.settings.colFirstName || 0;
                 document.getElementById('colLastName').value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
@@ -2193,14 +2083,12 @@
                 }
             }
 
-            // Update UI
             renderPersonList();
             personListCard.style.display = 'block';
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
             saveListCard.style.display = 'block';
 
-            // Show groups if available
             if (groups.length > 0) {
                 renderGroups();
                 groupsCard.style.display = 'block';
@@ -2210,18 +2098,13 @@
                 document.getElementById('randomGroupBtn').disabled = true;
             }
 
-            // Reset random result
             document.getElementById('randomResult').classList.remove('show');
+            document.getElementById('randomResult').style.display = 'none';
 
-            // Update file display
             updateFileDisplay();
-
-            // Refresh list display to show active state
             loadSavedLists();
 
             isLoadingList = false;
-
-            // Save state (updates timestamp)
             saveState();
 
             if (!silent) {
@@ -2237,16 +2120,13 @@
             delete lists[name];
             localStorage.setItem('savedLists', JSON.stringify(lists));
 
-            // Wenn die gelöschte Liste die aktive Liste war
             if (currentListName === name) {
                 currentListName = '';
                 localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
 
-                // Daten zurücksetzen
                 people = [];
                 groups = [];
 
-                // UI aktualisieren
                 renderPersonList();
                 personListCard.style.display = 'none';
                 distributionCard.style.display = 'none';

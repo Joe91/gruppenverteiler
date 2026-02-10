@@ -1067,7 +1067,12 @@
 
             if (currentListName) {
                 filePreview.style.display = 'block';
-                fileName.textContent = `📁 ${currentListName} (gespeicherte Liste)`;
+                const isTemp = currentListName.startsWith('[TEMP] ');
+                const listName = currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '');
+                const icon = isTemp ? '📝' : '💾';
+                const status = isTemp ? '(Temporär)' : '(Gespeichert)';
+
+                fileName.innerHTML = `${icon} <strong>${listName}</strong> ${status}`;
                 fileStats.textContent = `${people.length} Personen, ${groups.length} Gruppen`;
             } else if (people.length > 0) {
                 filePreview.style.display = 'block';
@@ -1283,6 +1288,11 @@
         // Save state to localStorage
         function saveState() {
             try {
+                // Speichere immer die aktuelle Liste als aktiv
+                if (currentListName) {
+                    localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
+                }
+
                 // Automatisch speichern, wenn es eine aktive Liste gibt
                 if (currentListName) {
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
@@ -1324,7 +1334,6 @@
                     }
 
                     localStorage.setItem('savedLists', JSON.stringify(lists));
-                    localStorage.setItem('currentListName', currentListName);
                 }
 
                 // Einstellungen immer speichern
@@ -1403,28 +1412,60 @@
         // Load state from localStorage
         function loadState() {
             try {
-                // Check if there was an active list
+                // Zuerst versuchen, die aktive Liste zu laden
                 const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
 
                 if (savedListName) {
-                    // Load the active list
+                    // Überprüfen, ob die gespeicherte Liste existiert
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
                     if (lists[savedListName]) {
+                        // Die aktive Liste existiert - sie laden
                         loadList(savedListName, true); // Silent load on startup
                         return;
+                    } else {
+                        // Die gespeicherte Liste existiert nicht mehr (wurde gelöscht)
+                        console.log(`Gespeicherte Liste "${savedListName}" wurde nicht gefunden`);
+                        localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
                     }
                 }
 
-                // Try to load unsaved data if no saved list
-                if (loadUnsavedData()) {
-                    renderPersonList();
-                    personListCard.style.display = 'block';
-                    distributionCard.style.display = 'block';
-                    randomCard.style.display = 'block';
-                    saveListCard.style.display = 'block';
-                    updateFileDisplay();
-                    updateUnsavedNotice();
+                // Falls keine aktive Liste oder sie nicht existiert:
+                // Versuche unsaved Daten zu laden
+                const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
+                if (savedPeople) {
+                    people = JSON.parse(savedPeople);
+                    if (people.length > 0) {
+                        // Unsaved Daten gefunden - als TEMP-Liste anzeigen
+                        currentListName = '[TEMP] Letzte Änderungen';
+                        firstNameCount = {};
+                        people.forEach(person => {
+                            firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
+                        });
 
+                        // Update display names
+                        people.forEach(person => {
+                            if (firstNameCount[person.firstName] > 1 && person.lastName) {
+                                const lastNamePart = person.lastName.substring(0, 3);
+                                person.displayName = `${person.firstName} ${lastNamePart}.`;
+                            } else {
+                                person.displayName = person.firstName;
+                            }
+                        });
+
+                        renderPersonList();
+                        personListCard.style.display = 'block';
+                        distributionCard.style.display = 'block';
+                        randomCard.style.display = 'block';
+                        saveListCard.style.display = 'block';
+                        updateFileDisplay();
+                    }
+                }
+
+                // Lade Gruppen, falls vorhanden
+                const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
+                if (savedGroups) {
+                    groups = JSON.parse(savedGroups);
                     if (groups.length > 0) {
                         renderGroups();
                         groupsCard.style.display = 'block';
@@ -1432,7 +1473,7 @@
                     }
                 }
 
-                // Load settings
+                // Lade Einstellungen
                 const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
@@ -1456,6 +1497,10 @@
                         document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
                     }
                 }
+
+                // Lade gespeicherte Listen
+                loadSavedLists();
+
             } catch (e) {
                 console.error('Error loading state:', e);
             }
@@ -1713,6 +1758,41 @@
             renderPersonList();
             updateRestModeHint();
             saveState();
+        }
+
+        // Render person list
+        // Automatisch als temporäre Liste speichern
+        function autoSaveAsTempList() {
+            if (!currentListName || currentListName.startsWith('[SAVED] ')) return;
+
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+            // Check if this is a new temp list (not already saved with [SAVED] prefix)
+            const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
+            if (lists[savedVersionName]) {
+                // Es gibt bereits eine gespeicherte Version, diese verwenden
+                currentListName = savedVersionName;
+            }
+
+            // Liste speichern
+            lists[currentListName] = {
+                people: people,
+                groups: groups,
+                settings: {
+                    colFirstName: document.getElementById('colFirstName').value,
+                    colLastName: document.getElementById('colLastName').value,
+                    colExclusions: document.getElementById('colExclusions').value,
+                    skipFirstRow: document.getElementById('skipFirstRow').checked,
+                    mode: document.querySelector('input[name="mode"]:checked').value,
+                    distributionValue: document.getElementById('distributionValue').value,
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                },
+                timestamp: new Date().toISOString(),
+                isTemp: currentListName.startsWith('[TEMP] ')
+            };
+
+            localStorage.setItem('savedLists', JSON.stringify(lists));
+            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
         }
 
         // Update stats
@@ -1991,41 +2071,12 @@
         // Clear current list
         function clearCurrentList() {
             if (!currentListName) {
-                // If no saved list, clear unsaved data
-                if (confirm('Möchten Sie die nicht gespeicherten Daten löschen?')) {
-                    people = [];
-                    groups = [];
-                    currentFileData = null;
-                    currentListName = '';
-                    hasUnsavedChanges = false;
-
-                    renderPersonList();
-                    updateFileDisplay();
-                    updateUnsavedNotice();
-                    loadSavedLists();
-                    showToast('Daten gelöscht');
-                }
+                showToast('Keine Liste geladen!', 'warning');
                 return;
             }
 
             if (confirm(`Möchten Sie die aktuell geladene Liste "${currentListName}" aus dem Speicher löschen?`)) {
-                const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
-                delete lists[currentListName];
-                localStorage.setItem('savedLists', JSON.stringify(lists));
-
-                // Reset to empty state
-                currentListName = '';
-                localStorage.removeItem('currentListName');
-                people = [];
-                groups = [];
-                hasUnsavedChanges = false;
-
-                // Update UI
-                renderPersonList();
-                updateFileDisplay();
-                updateUnsavedNotice();
-                loadSavedLists();
-                showToast('Liste gelöscht');
+                deleteList(currentListName);
             }
         }
 
@@ -2086,14 +2137,19 @@
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             const list = lists[name];
 
-            if (!list) return;
+            if (!list) {
+                showToast(`Liste "${name}" wurde nicht gefunden`, 'error');
+                return;
+            }
 
             isLoadingList = true;
 
             // Load people
             people = list.people || [];
             currentListName = name;
-            hasUnsavedChanges = false; // Reset unsaved changes when loading saved list
+
+            // Save as active list immediately
+            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, name);
 
             // Update firstNameCount
             firstNameCount = {};
@@ -2160,18 +2216,12 @@
             // Update file display
             updateFileDisplay();
 
-            // Save as current list
-            localStorage.setItem('currentListName', name);
-
             // Refresh list display to show active state
             loadSavedLists();
 
-            // Update unsaved notice
-            updateUnsavedNotice();
-
             isLoadingList = false;
 
-            // Save state (but not to the list itself during loading)
+            // Save state (updates timestamp)
             saveState();
 
             if (!silent) {
@@ -2187,9 +2237,22 @@
             delete lists[name];
             localStorage.setItem('savedLists', JSON.stringify(lists));
 
+            // Wenn die gelöschte Liste die aktive Liste war
             if (currentListName === name) {
                 currentListName = '';
-                localStorage.removeItem('currentListName');
+                localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
+
+                // Daten zurücksetzen
+                people = [];
+                groups = [];
+
+                // UI aktualisieren
+                renderPersonList();
+                personListCard.style.display = 'none';
+                distributionCard.style.display = 'none';
+                randomCard.style.display = 'none';
+                saveListCard.style.display = 'none';
+                groupsCard.style.display = 'none';
                 updateFileDisplay();
             }
 

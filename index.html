@@ -76,6 +76,19 @@
             margin-bottom: 16px;
         }
 
+        .unsaved-notice {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--warning);
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
         .help-link {
             display: inline-flex;
             align-items: center;
@@ -997,6 +1010,8 @@
         let currentFileData = null;
         let isLoadingList = false;
         let showExclusions = false; // Standardmäßig ausgeblendet
+        let hasUnsavedChanges = false;
+        let unsavedData = null;
 
         // LocalStorage keys
         const STORAGE_KEYS = {
@@ -1268,15 +1283,51 @@
         // Save state to localStorage
         function saveState() {
             try {
-                // Only save to generic storage if no list is loaded or it's a file upload
-                if (!currentListName || isLoadingList) {
-                    localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(people));
-                    localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+                // Automatisch speichern, wenn es eine aktive Liste gibt
+                if (currentListName) {
+                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+                    // Wenn es eine TEMP-Liste ist, aktualisieren
+                    if (currentListName.startsWith('[TEMP] ')) {
+                        lists[currentListName] = {
+                            people: people,
+                            groups: groups,
+                            settings: {
+                                colFirstName: document.getElementById('colFirstName').value,
+                                colLastName: document.getElementById('colLastName').value,
+                                colExclusions: document.getElementById('colExclusions').value,
+                                skipFirstRow: document.getElementById('skipFirstRow').checked,
+                                mode: document.querySelector('input[name="mode"]:checked').value,
+                                distributionValue: document.getElementById('distributionValue').value,
+                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                            },
+                            timestamp: new Date().toISOString(),
+                            isTemp: true
+                        };
+                    } else if (currentListName.startsWith('[SAVED] ')) {
+                        // Gespeicherte Liste aktualisieren
+                        lists[currentListName] = {
+                            people: people,
+                            groups: groups,
+                            settings: {
+                                colFirstName: document.getElementById('colFirstName').value,
+                                colLastName: document.getElementById('colLastName').value,
+                                colExclusions: document.getElementById('colExclusions').value,
+                                skipFirstRow: document.getElementById('skipFirstRow').checked,
+                                mode: document.querySelector('input[name="mode"]:checked').value,
+                                distributionValue: document.getElementById('distributionValue').value,
+                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                            },
+                            timestamp: new Date().toISOString(),
+                            isTemp: false
+                        };
+                    }
+
+                    localStorage.setItem('savedLists', JSON.stringify(lists));
+                    localStorage.setItem('currentListName', currentListName);
                 }
 
-                // Always save current list name
-                localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
-
+                // Einstellungen immer speichern
                 const settings = {
                     colFirstName: document.getElementById('colFirstName').value,
                     colLastName: document.getElementById('colLastName').value,
@@ -1288,32 +1339,65 @@
                 };
                 localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 
-                // If we have an active list, also save to that list (but only if not currently loading)
-                if (currentListName && !isLoadingList) {
-                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
-                    lists[currentListName] = {
-                        people: people,
-                        groups: groups,
-                        settings: settings,
-                        timestamp: new Date().toISOString()
-                    };
-                    localStorage.setItem('savedLists', JSON.stringify(lists));
-
-                    // Show saving animation
-                    const progressBar = document.getElementById('saveProgress');
-                    const progressFill = progressBar.querySelector('.progress-fill');
-                    progressBar.style.display = 'block';
-                    progressFill.style.width = '100%';
-                    setTimeout(() => {
-                        progressFill.style.width = '0%';
-                        setTimeout(() => {
-                            progressBar.style.display = 'none';
-                        }, 300);
-                    }, 500);
-                }
             } catch (e) {
                 console.error('Error saving state:', e);
             }
+        }
+
+        // Update unsaved notice visibility
+        function updateUnsavedNotice() {
+            const notice = document.getElementById('unsavedNotice');
+            if (hasUnsavedChanges && !currentListName) {
+                notice.style.display = 'flex';
+            } else {
+                notice.style.display = 'none';
+            }
+        }
+
+        // Save unsaved list as new list
+        function saveUnsavedList() {
+            const name = prompt("Bitte geben Sie einen Namen für die Liste ein:",
+                currentFileData ? currentFileData.name.replace(/\.[^/.]+$/, "") : "Neue Liste");
+            if (!name) return;
+
+            document.getElementById('listName').value = name;
+            document.getElementById('saveListBtn').click();
+        }
+
+        // Load unsaved data
+        function loadUnsavedData() {
+            try {
+                const saved = localStorage.getItem('gruppenverteiler_unsaved');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    unsavedData = data;
+
+                    people = data.people || [];
+                    groups = data.groups || [];
+                    currentFileData = data.fileData || null;
+
+                    // Recalculate firstNameCount
+                    firstNameCount = {};
+                    people.forEach(person => {
+                        firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
+                    });
+
+                    // Update display names
+                    people.forEach(person => {
+                        if (firstNameCount[person.firstName] > 1 && person.lastName) {
+                            const lastNamePart = person.lastName.substring(0, 3);
+                            person.displayName = `${person.firstName} ${lastNamePart}.`;
+                        } else {
+                            person.displayName = person.firstName;
+                        }
+                    });
+
+                    return true;
+                }
+            } catch (e) {
+                console.error('Error loading unsaved data:', e);
+            }
+            return false;
         }
 
         // Load state from localStorage
@@ -1331,23 +1415,16 @@
                     }
                 }
 
-                // Fallback: Try to load from old generic storage (for backwards compatibility)
-                const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
-                if (savedPeople) {
-                    people = JSON.parse(savedPeople);
-                    if (people.length > 0) {
-                        renderPersonList();
-                        personListCard.style.display = 'block';
-                        distributionCard.style.display = 'block';
-                        randomCard.style.display = 'block';
-                        saveListCard.style.display = 'block';
-                        updateFileDisplay();
-                    }
-                }
+                // Try to load unsaved data if no saved list
+                if (loadUnsavedData()) {
+                    renderPersonList();
+                    personListCard.style.display = 'block';
+                    distributionCard.style.display = 'block';
+                    randomCard.style.display = 'block';
+                    saveListCard.style.display = 'block';
+                    updateFileDisplay();
+                    updateUnsavedNotice();
 
-                const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
-                if (savedGroups) {
-                    groups = JSON.parse(savedGroups);
                     if (groups.length > 0) {
                         renderGroups();
                         groupsCard.style.display = 'block';
@@ -1355,6 +1432,7 @@
                     }
                 }
 
+                // Load settings
                 const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
@@ -1503,7 +1581,6 @@
 
             people = [];
             groups = [];
-            // DON'T clear currentListName here - only clear when explicitly loading another list
             firstNameCount = {};
             const startRow = skipFirst ? 1 : 0;
 
@@ -1538,6 +1615,12 @@
                 }
             });
 
+            // Automatisch als temporäre Liste speichern mit Dateinamen
+            const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            const fileName = currentFileData?.name || 'Neue Liste';
+            const baseName = fileName.replace(/\.[^/.]+$/, ""); // Extension entfernen
+            currentListName = `[TEMP] ${baseName} (${timestamp})`;
+
             renderPersonList();
             personListCard.style.display = 'block';
             distributionCard.style.display = 'block';
@@ -1546,8 +1629,61 @@
             groupsCard.style.display = 'none';
             updateStats();
             updateFileDisplay();
-            saveState();
+
+            // Automatisch als temporäre Liste speichern
+            autoSaveAsTempList();
+
+            // Saved Lists aktualisieren
             loadSavedLists();
+        }
+
+        // Automatisch als temporäre Liste speichern
+        function autoSaveAsTempList() {
+            if (!currentListName || currentListName.startsWith('[SAVED] ')) return;
+
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+            // Check if this is a new temp list (not already saved with [SAVED] prefix)
+            const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
+            if (lists[savedVersionName]) {
+                // Es gibt bereits eine gespeicherte Version, diese verwenden
+                currentListName = savedVersionName;
+                lists[currentListName] = {
+                    people: people,
+                    groups: groups,
+                    settings: {
+                        colFirstName: document.getElementById('colFirstName').value,
+                        colLastName: document.getElementById('colLastName').value,
+                        colExclusions: document.getElementById('colExclusions').value,
+                        skipFirstRow: document.getElementById('skipFirstRow').checked,
+                        mode: document.querySelector('input[name="mode"]:checked').value,
+                        distributionValue: document.getElementById('distributionValue').value,
+                        restMode: document.querySelector('input[name="restMode"]:checked').value
+                    },
+                    timestamp: new Date().toISOString(),
+                    isTemp: false
+                };
+            } else {
+                // Neue temporäre Liste speichern
+                lists[currentListName] = {
+                    people: people,
+                    groups: groups,
+                    settings: {
+                        colFirstName: document.getElementById('colFirstName').value,
+                        colLastName: document.getElementById('colLastName').value,
+                        colExclusions: document.getElementById('colExclusions').value,
+                        skipFirstRow: document.getElementById('skipFirstRow').checked,
+                        mode: document.querySelector('input[name="mode"]:checked').value,
+                        distributionValue: document.getElementById('distributionValue').value,
+                        restMode: document.querySelector('input[name="restMode"]:checked').value
+                    },
+                    timestamp: new Date().toISOString(),
+                    isTemp: true
+                };
+            }
+
+            localStorage.setItem('savedLists', JSON.stringify(lists));
+            localStorage.setItem('currentListName', currentListName);
         }
 
         // Render person list
@@ -1756,7 +1892,7 @@
             }
         });
 
-        // Random person
+        // Random person - NICHT SCROLLEN
         document.getElementById('randomPersonBtn').addEventListener('click', () => {
             const activePeople = people.filter(p => !p.ignored);
             if (activePeople.length === 0) {
@@ -1768,11 +1904,14 @@
 
             const result = document.getElementById('randomResult');
             result.textContent = `👤 ${randomPerson.displayName}`;
-            result.classList.remove('show');
-            setTimeout(() => result.classList.add('show'), 10);
+
+            // NICHT: result.classList.remove('show'); und dann setTimeout
+            // Stattdessen: direkt anzeigen ohne Animation, die scrollt
+            result.style.display = 'block';
+            result.classList.add('show');
         });
 
-        // Random group
+        // Random group - NICHT SCROLLEN
         document.getElementById('randomGroupBtn').addEventListener('click', () => {
             if (groups.length === 0) return;
 
@@ -1782,28 +1921,46 @@
 
             const result = document.getElementById('randomResult');
             result.innerHTML = `
-                <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
-                <div style="font-size: 0.9em;">${members}</div>
-            `;
-            result.classList.remove('show');
-            setTimeout(() => result.classList.add('show'), 10);
+        <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
+        <div style="font-size: 0.9em;">${members}</div>
+    `;
+
+            // NICHT: result.classList.remove('show'); und dann setTimeout
+            // Stattdessen: direkt anzeigen ohne Animation, die scrollt
+            result.style.display = 'block';
+            result.classList.add('show');
         });
 
         // Save list
         document.getElementById('saveListBtn').addEventListener('click', () => {
-            const name = document.getElementById('listName').value.trim();
+            let name = document.getElementById('listName').value.trim();
+
             if (!name) {
-                showToast('Bitte geben Sie einen Namen ein!', 'warning');
-                return;
+                // Wenn kein Name eingegeben, verwende den aktuellen Namen ohne TEMP-Präfix
+                if (currentListName && currentListName.startsWith('[TEMP] ')) {
+                    name = currentListName.replace('[TEMP] ', '');
+                } else if (currentListName && currentListName.startsWith('[SAVED] ')) {
+                    name = currentListName.replace('[SAVED] ', '');
+                } else {
+                    name = currentListName || 'Neue Liste';
+                }
             }
+
+            const savedName = `[SAVED] ${name}`;
 
             // Check if name already exists
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
-            if (lists[name] && !confirm(`Liste "${name}" existiert bereits. Überschreiben?`)) {
+            if (lists[savedName] && !confirm(`Liste "${name}" existiert bereits. Überschreiben?`)) {
                 return;
             }
 
-            lists[name] = {
+            // Alte TEMP-Liste löschen, falls vorhanden
+            if (currentListName && currentListName !== savedName) {
+                delete lists[currentListName];
+            }
+
+            // Neue SAVED-Liste erstellen
+            lists[savedName] = {
                 people: people,
                 groups: groups,
                 settings: {
@@ -1815,15 +1972,16 @@
                     distributionValue: document.getElementById('distributionValue').value,
                     restMode: document.querySelector('input[name="restMode"]:checked').value
                 },
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                isTemp: false
             };
 
             localStorage.setItem('savedLists', JSON.stringify(lists));
-            currentListName = name;
+            currentListName = savedName;
             document.getElementById('listName').value = '';
 
             // Save current list name
-            localStorage.setItem('currentListName', name);
+            localStorage.setItem('currentListName', savedName);
 
             loadSavedLists();
             updateFileDisplay();
@@ -1833,7 +1991,20 @@
         // Clear current list
         function clearCurrentList() {
             if (!currentListName) {
-                showToast('Keine Liste geladen!', 'warning');
+                // If no saved list, clear unsaved data
+                if (confirm('Möchten Sie die nicht gespeicherten Daten löschen?')) {
+                    people = [];
+                    groups = [];
+                    currentFileData = null;
+                    currentListName = '';
+                    hasUnsavedChanges = false;
+
+                    renderPersonList();
+                    updateFileDisplay();
+                    updateUnsavedNotice();
+                    loadSavedLists();
+                    showToast('Daten gelöscht');
+                }
                 return;
             }
 
@@ -1842,13 +2013,19 @@
                 delete lists[currentListName];
                 localStorage.setItem('savedLists', JSON.stringify(lists));
 
-                // Reset to file state if available
+                // Reset to empty state
                 currentListName = '';
                 localStorage.removeItem('currentListName');
+                people = [];
+                groups = [];
+                hasUnsavedChanges = false;
 
-                loadSavedLists();
+                // Update UI
+                renderPersonList();
                 updateFileDisplay();
-                showToast(`Liste "${currentListName}" gelöscht`);
+                updateUnsavedNotice();
+                loadSavedLists();
+                showToast('Liste gelöscht');
             }
         }
 
@@ -1863,23 +2040,39 @@
             }
 
             savedListsCard.style.display = 'block';
-            container.innerHTML = Object.keys(lists).map(name => {
+
+            // Sortiere Listen: Zuerst gespeicherte, dann temporäre
+            const sortedListNames = Object.keys(lists).sort((a, b) => {
+                const aIsTemp = lists[a].isTemp;
+                const bIsTemp = lists[b].isTemp;
+                if (aIsTemp && !bIsTemp) return 1; // TEMP nach unten
+                if (!aIsTemp && bIsTemp) return -1; // SAVED nach oben
+                return 0;
+            });
+
+            container.innerHTML = sortedListNames.map(name => {
                 const list = lists[name];
                 const isActive = name === currentListName;
                 const date = list.timestamp ? new Date(list.timestamp).toLocaleDateString('de-DE') : '';
                 const personCount = list.people ? list.people.length : 0;
+                const isTemp = list.isTemp === true;
+
+                // Unterschiedliche Icons für TEMP vs SAVED
+                const icon = isTemp ? '📝' : '💾';
+                const tempBadge = isTemp ? '<span style="font-size: 0.7em; color: var(--warning); background: rgba(243, 156, 18, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">TEMP</span>' : '';
 
                 return `
-                    <div class="saved-list-item ${isActive ? 'active' : ''}">
-                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
-                            ${name}
-                            <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: normal;">
-                                ${personCount} Personen • ${date}
-                            </div>
-                        </span>
-                        <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
+            <div class="saved-list-item ${isActive ? 'active' : ''}">
+                <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
+                    ${icon} ${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}
+                    ${tempBadge}
+                    <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: normal;">
+                        ${personCount} Personen • ${date}
                     </div>
-                `;
+                </span>
+                <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
+            </div>
+        `;
             }).join('');
         }
 
@@ -1900,6 +2093,7 @@
             // Load people
             people = list.people || [];
             currentListName = name;
+            hasUnsavedChanges = false; // Reset unsaved changes when loading saved list
 
             // Update firstNameCount
             firstNameCount = {};
@@ -1960,7 +2154,7 @@
                 document.getElementById('randomGroupBtn').disabled = true;
             }
 
-            // Zufalls-Person-Feld zurücksetzen
+            // Reset random result
             document.getElementById('randomResult').classList.remove('show');
 
             // Update file display
@@ -1971,6 +2165,9 @@
 
             // Refresh list display to show active state
             loadSavedLists();
+
+            // Update unsaved notice
+            updateUnsavedNotice();
 
             isLoadingList = false;
 
@@ -2044,4 +2241,3 @@
 </body>
 
 </html>
-[file content end]

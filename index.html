@@ -1851,7 +1851,7 @@
         // Load specific list
         function loadList(name, silent = false) {
             if (currentListName === name && !silent) {
-                showToast(`Liste "${name}" ist bereits geladen`, 'info');
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" ist bereits geladen`, 'info');
                 return;
             }
 
@@ -1859,7 +1859,7 @@
             const list = lists[name];
 
             if (!list) {
-                showToast(`Liste "${name}" wurde nicht gefunden`, 'error');
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wurde nicht gefunden`, 'error');
                 return;
             }
 
@@ -1933,13 +1933,13 @@
             saveState();
 
             if (!silent) {
-                showToast(`Liste "${name}" geladen!`);
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" geladen!`);
             }
         }
 
         // Delete list
         function deleteList(name) {
-            if (!confirm(`Liste "${name}" wirklich löschen?`)) return;
+            if (!confirm(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wirklich löschen?`)) return;
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             delete lists[name];
@@ -1956,13 +1956,18 @@
                 personListCard.style.display = 'none';
                 distributionCard.style.display = 'none';
                 randomCard.style.display = 'none';
-                listManagementCard.style.display = 'none';
                 groupsCard.style.display = 'none';
+                
+                // Keep listManagementCard visible if there are still lists
+                if (Object.keys(lists).length === 0) {
+                    listManagementCard.style.display = 'none';
+                }
+                
                 updateFileDisplay();
             }
 
             loadSavedLists();
-            showToast(`Liste "${name}" gelöscht`);
+            showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" gelöscht`);
         }
 
         // Download example file

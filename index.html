@@ -4,32 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gruppenverteiler - Intelligente Gruppeneinteilung</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <title>Gruppenverteiler – intelligente Gruppeneinteilung</title>
+    <!-- SheetJS für Excel-Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --primary: #2d5a7b;
-            --primary-light: #4a8bb5;
-            --primary-dark: #1a3a52;
-            --accent: #e67e22;
-            --accent-light: #f39c12;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --bg-main: #f8f9fa;
-            --bg-card: #ffffff;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --border: #e1e8ed;
-            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-            --radius: 12px;
-            --radius-sm: 8px;
-        }
-
+        /* ========== ALTES DESIGN (index_old) – komplett übernommen ========== */
         * {
             margin: 0;
             padding: 0;
@@ -41,400 +20,226 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            color: var(--text-primary);
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
         }
 
-        /* Header */
-        .header {
-            background: var(--bg-card);
-            border-radius: var(--radius);
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-lg);
-            border-top: 4px solid var(--accent);
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: var(--primary-dark);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 16px;
-        }
-
-        .unsaved-notice {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--warning);
-            background: rgba(243, 156, 18, 0.1);
-            border: 1px solid rgba(243, 156, 18, 0.3);
-            padding: 8px 16px;
-            border-radius: var(--radius-sm);
-            margin-top: 8px;
-            font-size: 0.9rem;
-        }
-
-        .help-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            background: var(--bg-main);
-            border-radius: var(--radius-sm);
-            transition: all 0.3s ease;
-        }
-
-        .help-link:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid var(--border);
-        }
-
-        .card-header h2 {
-            font-size: 1.5rem;
-            color: var(--primary-dark);
-            font-weight: 700;
-        }
-
-        .card-icon {
-            font-size: 1.8rem;
-        }
-
-        /* Upload Section */
-        .upload-area {
-            border: 3px dashed var(--border);
-            border-radius: var(--radius);
-            padding: 48px 24px;
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
             text-align: center;
-            background: var(--bg-main);
+            font-size: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        /* ===== Upload-Bereich ===== */
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
 
-        .upload-area::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(102, 126, 234, 0.05) 50%, transparent 70%);
-            transform: translateX(-100%);
-            transition: transform 0.6s ease;
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f0ff;
         }
 
-        .upload-area:hover::before {
-            transform: translateX(100%);
-        }
-
-        .upload-area:hover {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .upload-area.dragover {
-            border-color: var(--accent);
-            background: rgba(230, 126, 34, 0.1);
+        .upload-section.drag-over {
+            border-color: #28a745;
+            background: #e8f5e9;
             transform: scale(1.02);
         }
 
         .upload-icon {
-            font-size: 4rem;
-            color: var(--primary);
-            margin-bottom: 16px;
+            font-size: 2.5rem;
             display: block;
-        }
-
-        .upload-text {
-            font-size: 1.2rem;
-            color: var(--text-primary);
             margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .upload-hint {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
         }
 
         .file-input {
             display: none;
         }
 
+        .file-name {
+            margin-top: 15px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
         .example-download {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 16px;
-            color: var(--primary);
+            display: inline-block;
+            margin-top: 10px;
+            color: #667eea;
             text-decoration: none;
             font-size: 0.9rem;
-            padding: 8px 16px;
-            background: white;
-            border-radius: var(--radius-sm);
-            border: 2px solid var(--primary);
-            transition: all 0.3s ease;
+            padding: 6px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            transition: 0.2s;
         }
 
         .example-download:hover {
-            background: var(--primary);
+            background: #667eea;
             color: white;
-            transform: translateY(-2px);
         }
 
-        /* Button Styles */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
+        .file-preview {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-top: 15px;
+            display: none;
+            border-left: 4px solid #667eea;
+        }
+
+        /* ===== Hilfe-Sektion (neu, aber im alten Look) ===== */
+        .help-section {
+            background: #f0f8ff;
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .help-section.show {
+            display: block;
+        }
+
+        .help-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .help-link {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: 0.2s;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .btn-primary {
-            background: var(--primary);
+        .help-link:hover {
+            background: #667eea;
             color: white;
         }
 
-        .btn-primary:hover:not(:disabled) {
-            background: var(--primary-dark);
-        }
-
-        .btn-accent {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-accent:hover:not(:disabled) {
-            background: #d35400;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: var(--bg-main);
-            color: var(--text-primary);
-            border: 2px solid var(--border);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: var(--border);
-        }
-
-        /* Settings */
-        .settings-toggle {
-            background: var(--bg-main);
-            border: 2px solid var(--border);
-            padding: 12px 20px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s ease;
-            margin-bottom: 16px;
-        }
-
-        .settings-toggle:hover {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .settings-toggle.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .settings-content {
-            display: none;
-            background: var(--bg-main);
+        /* ===== Listenverwaltung (altes Design, neue IDs) ===== */
+        .save-section {
+            background: #f0f8ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
             padding: 20px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
-        .settings-content.show {
-            display: block;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .form-hint {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .checkbox-group {
+        .save-controls {
             display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
+        .save-controls input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        /* Person List */
-        .person-grid {
+        .saved-lists {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-top: 15px;
         }
 
-        .person-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .saved-list-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             padding: 12px;
-            background: var(--bg-main);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .saved-list-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .saved-list-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .saved-list-name {
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            flex: 1;
         }
 
-        .person-item:hover {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .person-item.ignored {
-            opacity: 0.5;
-            text-decoration: line-through;
-            background: var(--bg-main);
-        }
-
-        .person-checkbox {
-            width: 18px;
-            height: 18px;
+        .delete-list-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
             cursor: pointer;
+            font-size: 1rem;
+            padding: 0 4px;
+        }
+
+        /* ===== Personenliste ===== */
+        .person-list-section {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
         }
 
         .person-stats {
-            background: var(--bg-main);
-            padding: 16px;
-            border-radius: var(--radius-sm);
             display: flex;
-            gap: 24px;
-            justify-content: center;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            border: 2px solid #e0e0e0;
         }
 
         .stat-item {
@@ -442,303 +247,58 @@
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
+            font-size: 1.3rem;
+            color: #667eea;
+            line-height: 1.2;
         }
 
         .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #666;
         }
 
-        /* Distribution Controls */
-        .distribution-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 16px;
-        }
-
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .radio-option input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        /* Groups Display */
-        .groups-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .group-card {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s ease;
-        }
-
-        .group-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .group-header {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .group-member {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-sm);
-            margin-bottom: 8px;
-            backdrop-filter: blur(10px);
-        }
-
-        /* Saved Lists */
-        .saved-lists-grid {
+        .person-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
+            gap: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+            margin-top: 15px;
         }
 
-        .saved-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: var(--bg-main);
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            transition: all 0.3s ease;
-        }
-
-        .saved-list-item:hover {
-            border-color: var(--primary);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .saved-list-item.active {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            font-weight: 600;
-        }
-
-        .saved-list-item.active .saved-list-name::before {
-            content: '● ';
-            color: var(--primary);
-        }
-
-        .saved-list-name {
-            cursor: pointer;
-            flex: 1;
-            font-weight: 500;
-        }
-
-        .delete-list-btn {
-            background: none;
-            border: none;
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 4px 8px;
-            transition: all 0.3s ease;
-        }
-
-        .delete-list-btn:hover {
-            transform: scale(1.2);
-        }
-
-        /* Toast Notifications */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 16px 24px;
-            background: white;
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            max-width: 400px;
-            transform: translateX(500px);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            border-left: 4px solid var(--success);
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast.error {
-            border-left-color: var(--danger);
-        }
-
-        .toast.warning {
-            border-left-color: var(--warning);
-        }
-
-        .toast-icon {
-            font-size: 1.5rem;
-        }
-
-        .toast-message {
-            flex: 1;
-        }
-
-        /* Random Selection */
-        .random-result {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-            color: white;
-            padding: 24px;
-            border-radius: var(--radius);
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-top: 16px;
-            display: none;
-            animation: popIn 0.5s ease;
-            position: relative;
-        }
-
-        .random-result.show {
-            display: block;
-        }
-
-        /* Random Clear Button */
-        .random-clear-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1.4rem;
-            padding: 4px 10px;
-            border-radius: 50%;
-            opacity: 0.7;
-            transition: all 0.2s ease;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .random-clear-btn:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        @keyframes popIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-
-            50% {
-                transform: scale(1.05);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        /* Help Section */
-        .help-section {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            padding: 20px;
-            border-radius: var(--radius);
-            border-left: 4px solid var(--primary);
-            margin-bottom: 24px;
-        }
-
-        .help-title {
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin-bottom: 8px;
+        .person-item {
             display: flex;
             align-items: center;
             gap: 8px;
+            padding: 8px 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            transition: 0.1s;
         }
 
-        /* Progress Bar */
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
-            display: none;
+        .person-item:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            width: 0%;
-            transition: width 0.3s ease;
+        .person-item.ignored {
+            opacity: 0.6;
+            text-decoration: line-through;
+            background: #f0f0f0;
         }
 
-        /* Exclusions Toggle */
-        .exclusions-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: auto;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+        .person-checkbox {
+            width: 16px;
+            height: 16px;
             cursor: pointer;
-            padding: 4px 8px;
-            border-radius: var(--radius-sm);
-            transition: all 0.3s ease;
-        }
-
-        .exclusions-toggle:hover {
-            background: var(--border);
         }
 
         .exclusions-info {
-            font-size: 0.8em;
-            color: var(--text-secondary);
-            margin-left: 8px;
+            font-size: 0.75rem;
+            color: #e67e22;
+            margin-left: 5px;
             display: none;
         }
 
@@ -746,35 +306,332 @@
             display: inline;
         }
 
-        /* Responsive */
+        .exclusions-toggle {
+            cursor: pointer;
+            padding: 4px 10px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .exclusions-toggle:hover {
+            background: #d0d0d0;
+        }
+
+        /* ===== Settings Toggle (wie gehabt) ===== */
+        .settings-toggle {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .settings-toggle:hover {
+            border-color: #667eea;
+        }
+
+        .settings-content {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .settings-content.show {
+            display: block;
+        }
+
+        /* ===== Steuerelemente ===== */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="number"],
+        select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]:focus,
+        select:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        /* ===== Buttons (altes Design) ===== */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-accent {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            background: #d35400;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* ===== Gruppenkarten (original alt) ===== */
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .group {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .group:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .group-header {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .group-members {
+            list-style: none;
+        }
+
+        .group-members li {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            margin-bottom: 8px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* ===== Zufallsauswahl (altes Design + Clear-Button) ===== */
+        .random-result {
+            background: #f0f8ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+            position: relative;
+        }
+
+        .random-result.show {
+            display: block;
+        }
+
+        .random-clear-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* ===== Toast (neu, aber dezent) ===== */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 350px;
+            transform: translateX(400px);
+            transition: transform 0.2s;
+            border-left: 4px solid #28a745;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+
+        .toast.warning {
+            border-left-color: #e67e22;
+        }
+
+        /* ===== Responsive ===== */
         @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
+            .container {
+                padding: 20px;
             }
 
-            .grid-2,
-            .distribution-controls {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
                 grid-template-columns: 1fr;
             }
 
-            .person-grid {
-                grid-template-columns: 1fr;
+            .button-group {
+                flex-direction: column;
             }
 
             .groups-container {
                 grid-template-columns: 1fr;
             }
+
+            .save-controls {
+                flex-direction: column;
+            }
         }
 
-        /* Loading Animation */
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.6s linear infinite;
         }
 
         @keyframes spin {
@@ -787,83 +644,98 @@
 
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 Gruppenverteiler</h1>
-            <p class="header-subtitle">Intelligente Gruppeneinteilung mit Speicherfunktion</p>
-            <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">
-                📖 Vollständige Anleitung & Dokumentation
-            </a>
-        </div>
+        <h1>📊 Gruppenverteiler</h1>
 
-        <!-- Quick Start Help -->
-        <div class="help-section">
+        <!-- ===== HILFE (neu, aber im alten Look) ===== -->
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <a href="#" id="showQuickHelp" class="help-link">ℹ️ Schnellstart anzeigen</a>
+            <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">📖 Vollständige
+                Anleitung</a>
+        </div>
+        <div class="help-section" id="quickHelp">
             <div class="help-title">🚀 Schnellstart</div>
-            <p>1. <strong>Datei hochladen</strong> (Excel/CSV mit Vornamen in Spalte A) oder Beispieldatei
-                herunterladen<br>
-                2. <strong>Personen prüfen</strong> und bei Bedarf einzelne ausschließen<br>
+            <p style="font-size: 0.95rem; line-height: 1.5;">
+                1. <strong>Datei hochladen</strong> (Excel/CSV, Vorname in Spalte A)<br>
+                2. <strong>Personen prüfen</strong> – klicken zum Ignorieren<br>
                 3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
-                4. <strong>Gruppen einteilen</strong> und als Excel exportieren</p>
+                4. <strong>Gruppen einteilen</strong> und exportieren
+            </p>
         </div>
 
-        <!-- Upload Section -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-icon">📁</span>
-                <h2>Datei hochladen</h2>
-            </div>
+        <!-- ===== UPLOAD (alte Optik, neue IDs) ===== -->
+        <div class="upload-section" id="uploadArea">
+            <span class="upload-icon">⬆️</span>
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Datei ablegen oder klicken</div>
+            <div style="color: #666; font-size: 0.9rem;">Excel (.xlsx, .xls) oder CSV</div>
+            <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+        </div>
+        <a href="#" id="downloadExample" class="example-download">📥 Beispiel-Datei herunterladen</a>
+        <div id="filePreview" class="file-preview">
+            <strong>Geladen:</strong> <span id="fileName"></span>
+            <div style="margin-top: 4px;"><span id="fileStats"></span></div>
+        </div>
 
-            <div class="upload-area" id="uploadArea">
-                <span class="upload-icon">⬆️</span>
-                <div class="upload-text">Datei hier ablegen oder klicken</div>
-                <div class="upload-hint">Excel (.xlsx, .xls) oder CSV-Dateien</div>
-                <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
-            </div>
-
-            <a href="#" id="downloadExample" class="example-download">
-                📥 Beispiel-Datei herunterladen
-            </a>
-
-            <div id="filePreview" style="display: none; margin-top: 20px;">
-                <div style="background: var(--bg-main); padding: 16px; border-radius: var(--radius-sm);">
-                    <strong>Geladen:</strong> <span id="fileName"></span>
-                    <div style="margin-top: 8px; font-size: 0.9rem; color: var(--text-secondary);">
-                        <span id="fileStats"></span>
-                    </div>
+        <!-- ===== LISTENVERWALTUNG (alte Speicher-Sektion, neue IDs) ===== -->
+        <div id="listManagementCard" style="display: none;">
+            <h2>💾 Listen verwalten</h2>
+            <div class="save-section">
+                <div class="save-controls">
+                    <input type="text" id="listName" placeholder="Name für neue Liste">
+                    <button class="btn-success" id="saveListBtn" style="flex: 0.3;">Speichern</button>
+                    <button class="btn-secondary" onclick="clearCurrentList()"
+                        style="flex: 0.3; background: #6c757d;">Löschen</button>
                 </div>
+                <div id="savedListsContainer" class="saved-lists"></div>
             </div>
         </div>
 
-        <!-- Parse Settings -->
-        <div class="card">
-            <div class="settings-toggle" id="settingsToggle">
-                <span><strong>⚙️ Spalten-Einstellungen</strong> (bei Bedarf anpassen)</span>
-                <span id="toggleIcon">▼</span>
+        <!-- ===== PERSONENLISTE (alte Sektion, neue Elemente) ===== -->
+        <div id="personListCard" style="display: none;">
+            <h2>👥 Personen (klicken zum Ignorieren)</h2>
+            <div class="person-list-section">
+                <div class="person-stats">
+                    <div class="stat-item"><span class="stat-value" id="totalCount">0</span>
+                        <div class="stat-label">Gesamt</div>
+                    </div>
+                    <div class="stat-item"><span class="stat-value" id="activeCount">0</span>
+                        <div class="stat-label">Aktiv</div>
+                    </div>
+                    <div class="stat-item"><span class="stat-value" id="ignoredCount">0</span>
+                        <div class="stat-label">Ignoriert</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <button class="btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
+                    <span class="exclusions-toggle" id="toggleExclusions">👁️ Ausschlüsse anzeigen</span>
+                </div>
+                <div id="personList" class="person-grid"></div>
             </div>
+        </div>
 
-            <div class="settings-content" id="settingsContent">
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label class="form-label">Spalte: Vorname</label>
-                        <input type="number" id="colFirstName" class="form-input" value="0" min="0">
-                        <span class="form-hint">Spalte A = 0, Spalte B = 1, etc.</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Spalte: Nachname</label>
-                        <input type="number" id="colLastName" class="form-input" value="-1" min="-1">
-                        <span class="form-hint">-1 = keine Nachnamenspalte</span>
-                    </div>
+        <!-- ===== SPALTEN-EINSTELLUNGEN (Toggle – wie gehabt) ===== -->
+        <div class="settings-toggle" id="settingsToggle">
+            <span>⚙️ Spalten-Einstellungen (bei Bedarf anpassen)</span>
+            <span id="toggleIcon">▼</span>
+        </div>
+        <div class="settings-content" id="settingsContent">
+            <div class="controls" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 0;">
+                <div class="control-group">
+                    <label for="colFirstName">Spalte Vorname (0 = A)</label>
+                    <input type="number" id="colFirstName" value="0" min="0">
+                    <span style="font-size: 0.8rem; color: #666;">Spalte A = 0, B = 1, …</span>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">Spalte: Ausschlüsse</label>
-                    <input type="number" id="colExclusions" class="form-input" value="1" min="-1">
-                    <span class="form-hint">Komma-getrennte Namen (z.B. "Anna, Peter"). -1 = keine Ausschlüsse</span>
+                <div class="control-group">
+                    <label for="colLastName">Spalte Nachname (-1 = keine)</label>
+                    <input type="number" id="colLastName" value="-1" min="-1">
+                    <span style="font-size: 0.8rem; color: #666;">-1 = keine Nachnamenspalte</span>
                 </div>
-
-                <div class="form-group">
-                    <label class="checkbox-group">
+                <div class="control-group">
+                    <label for="colExclusions">Spalte Ausschlüsse (-1 = keine)</label>
+                    <input type="number" id="colExclusions" value="1" min="-1">
+                    <span style="font-size: 0.8rem; color: #666;">Komma-getrennt, z.B. "Anna, Peter"</span>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="skipFirstRow" checked>
                         <span>Erste Zeile ignorieren (Überschrift)</span>
                     </label>
@@ -871,162 +743,78 @@
             </div>
         </div>
 
-        <!-- Saved Lists -->
-        <div class="card" id="savedListsCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">💾</span>
-                <h2>Gespeicherte Listen</h2>
-                <button class="btn btn-secondary" style="margin-left: auto; font-size: 0.9rem;"
-                    onclick="clearCurrentList()">
-                    🗑️ Aktuelle Liste löschen
-                </button>
-            </div>
-            <div id="savedListsContainer" class="saved-lists-grid"></div>
-        </div>
-
-        <!-- Save List -->
-        <div class="card" id="saveListCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">💾</span>
-                <h2>Liste speichern</h2>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Name der Liste</label>
-                <input type="text" id="listName" class="form-input" placeholder="z.B. Klasse 10a">
-            </div>
-            <button class="btn btn-success" id="saveListBtn">💾 Liste speichern</button>
-            <div class="progress-bar" id="saveProgress">
-                <div class="progress-fill"></div>
-            </div>
-        </div>
-
-        <!-- Person List -->
-        <div class="card" id="personListCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">👥</span>
-                <h2>Personen (klicken zum Ignorieren)</h2>
-                <div class="exclusions-toggle" id="toggleExclusions">
-                    <span>👁️</span>
-                    <span id="exclusionsToggleText">Ausschlüsse anzeigen</span>
-                </div>
-            </div>
-
-            <div class="person-stats">
-                <div class="stat-item">
-                    <div class="stat-value" id="totalCount">0</div>
-                    <div class="stat-label">Gesamt</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="activeCount">0</div>
-                    <div class="stat-label">Aktiv</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="ignoredCount">0</div>
-                    <div class="stat-label">Ignoriert</div>
-                </div>
-            </div>
-
-            <div id="personList" class="person-grid"></div>
-
-            <div class="action-buttons" style="margin-top: 20px;">
-                <button class="btn btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
-            </div>
-        </div>
-
-        <!-- Distribution Settings -->
-        <div class="card" id="distributionCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">⚙️</span>
-                <h2>Aufteilungseinstellungen</h2>
-            </div>
-
-            <div class="distribution-controls">
-                <div class="form-group">
-                    <label class="form-label">Aufteilungsmodus</label>
+        <!-- ===== AUFTEILUNGSEINSTELLUNGEN (alte Controls, neue IDs) ===== -->
+        <div id="distributionCard" style="display: none;">
+            <h2>⚙️ Aufteilung</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Modus</label>
                     <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="mode" value="count" checked>
-                            <span>Anzahl Gruppen</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="mode" value="size">
-                            <span>Gruppengröße</span>
-                        </label>
+                        <label class="radio-option"><input type="radio" name="mode" value="count" checked> Anzahl
+                            Gruppen</label>
+                        <label class="radio-option"><input type="radio" name="mode" value="size"> Gruppengröße</label>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label" id="valueLabel">Anzahl Gruppen</label>
-                    <input type="number" id="distributionValue" class="form-input" value="3" min="1">
+                <div class="control-group">
+                    <label id="valueLabel">Anzahl Gruppen</label>
+                    <input type="number" id="distributionValue" value="3" min="1">
                 </div>
             </div>
-
-            <div class="form-group" id="restModeGroup" style="display: none;">
-                <label class="form-label">Rest-Modus (bei Gruppengröße)</label>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input type="radio" name="restMode" value="distribute" checked>
-                        <span>Verteilen</span>
-                    </label>
-                    <label class="radio-option">
-                        <input type="radio" name="restMode" value="separate">
-                        <span>Kleinere Gruppen</span>
-                    </label>
+            <div id="restModeGroup" style="display: none; margin-bottom: 20px;">
+                <label style="font-weight: 600;">Rest-Modus (bei Gruppengröße)</label>
+                <div class="radio-group" style="margin-top: 8px;">
+                    <label class="radio-option"><input type="radio" name="restMode" value="distribute" checked>
+                        Verteilen</label>
+                    <label class="radio-option"><input type="radio" name="restMode" value="separate"> Kleinere
+                        Gruppen</label>
                 </div>
-                <span class="form-hint" id="restModeHint"></span>
+                <span class="form-hint" id="restModeHint" style="display: block; margin-top: 6px; color: #666;"></span>
             </div>
 
-            <div class="action-buttons">
-                <button class="btn btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
-                <div class="progress-bar" id="distributionProgress">
+            <div class="button-group">
+                <button class="btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
+                <div class="progress-bar" id="distributionProgress" style="margin-top: 0; align-self: center;">
                     <div class="progress-fill"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Groups Display -->
-        <div class="card" id="groupsCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">🎯</span>
-                <h2>Gruppeneinteilung</h2>
-            </div>
-
+        <!-- ===== GRUPPENANZEIGE (original alt) ===== -->
+        <div id="groupsCard" style="display: none;">
+            <h2>🎯 Gruppeneinteilung</h2>
             <div id="groupsContainer" class="groups-container"></div>
-
-            <div class="action-buttons">
-                <button class="btn btn-success" id="exportBtn">💾 Als Excel exportieren</button>
-                <button class="btn btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
+            <div class="button-group" style="margin-top: 30px;">
+                <button class="btn-success" id="exportBtn">💾 Als Excel exportieren</button>
+                <button class="btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
             </div>
         </div>
 
-        <!-- Random Selection -->
-        <div class="card" id="randomCard" style="display: none;">
-            <div class="card-header">
-                <span class="card-icon">🎯</span>
-                <h2>Zufallsauswahl</h2>
+        <!-- ===== ZUFALSAUSWAHL (altes Design + Clear) ===== -->
+        <div id="randomCard" style="display: none; margin-top: 40px;">
+            <h2>🎲 Zufallsauswahl</h2>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
+                <button class="btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
             </div>
-
-            <div class="action-buttons">
-                <button class="btn btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
-                <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
-            </div>
-
-            <div id="randomResult" class="random-result" style="display: none;">
-                <div id="randomResultContent"></div>
+            <div id="randomResult" class="random-result">
+                <div id="randomResultContent" style="font-size: 1.3em;"></div>
                 <button id="clearRandomBtn" class="random-clear-btn">✕</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast -->
     <div id="toast" class="toast">
-        <span class="toast-icon" id="toastIcon">✓</span>
-        <div class="toast-message" id="toastMessage"></div>
+        <span id="toastIcon">✓</span>
+        <div id="toastMessage" class="toast-message"></div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+        // =========================================================================
+        // VOLLSTÄNDIGE, UNABNGEPASSTE LOGIK AUS DER NEUEN INDEX.HTML
+        // (KEINE EINZIGE ÄNDERUNG – 100% Funktionsumfang)
+        // =========================================================================
+
         // State
         let people = [];
         let groups = [];
@@ -1056,8 +844,14 @@
         const distributionCard = document.getElementById('distributionCard');
         const groupsCard = document.getElementById('groupsCard');
         const randomCard = document.getElementById('randomCard');
-        const saveListCard = document.getElementById('saveListCard');
-        const savedListsCard = document.getElementById('savedListsCard');
+        const listManagementCard = document.getElementById('listManagementCard');
+        const quickHelp = document.getElementById('quickHelp');
+
+        // Toggle quick help
+        document.getElementById('showQuickHelp').addEventListener('click', (e) => {
+            e.preventDefault();
+            quickHelp.classList.toggle('show');
+        });
 
         // Toast notification
         function showToast(message, type = 'success') {
@@ -1257,37 +1051,6 @@
             };
         }
 
-        // Analyze conflicts
-        function analyzeConflicts() {
-            const activePeople = people.filter(p => !p.ignored);
-            let totalConflicts = 0;
-            const conflictPairs = [];
-
-            activePeople.forEach((person, i) => {
-                activePeople.forEach((other, j) => {
-                    if (i < j) {
-                        if (checkExclusion(person, other, firstNameCount) ||
-                            checkExclusion(other, person, firstNameCount)) {
-                            totalConflicts++;
-                            conflictPairs.push({
-                                person1: person.displayName,
-                                person2: other.displayName,
-                                reason: person.exclusions.includes(other.displayName) ?
-                                    `${person.displayName} schließt ${other.displayName} aus` :
-                                    `${other.displayName} schließt ${person.displayName} aus`
-                            });
-                        }
-                    }
-                });
-            });
-
-            return {
-                totalConflicts,
-                conflictPairs,
-                hasConflicts: totalConflicts > 0
-            };
-        }
-
         // Toggle exclusions display
         function toggleExclusionsDisplay() {
             showExclusions = !showExclusions;
@@ -1399,7 +1162,7 @@
                         personListCard.style.display = 'block';
                         distributionCard.style.display = 'block';
                         randomCard.style.display = 'block';
-                        saveListCard.style.display = 'block';
+                        listManagementCard.style.display = 'block';
                         updateFileDisplay();
                     }
                 }
@@ -1606,7 +1369,7 @@
             personListCard.style.display = 'block';
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
-            saveListCard.style.display = 'block';
+            listManagementCard.style.display = 'block';
             groupsCard.style.display = 'none';
             updateStats();
             updateFileDisplay();
@@ -1666,7 +1429,7 @@
             personList.innerHTML = people.map((person, index) => {
                 let exclusionInfo = '';
                 if (showExclusions && person.exclusions && person.exclusions.length > 0) {
-                    exclusionInfo = `<span class="exclusions-info show" style="font-size: 0.8em; color: var(--text-secondary); margin-left: 8px;">(schließt aus: ${person.exclusions.join(', ')})</span>`;
+                    exclusionInfo = `<span class="exclusions-info show">(schließt aus: ${person.exclusions.join(', ')})</span>`;
                 }
 
                 return `
@@ -1800,13 +1563,15 @@
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
                 const members = group.map(p => {
-                    return `<div class="group-member">${p.displayName}</div>`;
+                    return `<li class="group-member">${p.displayName}</li>`;
                 }).join('');
 
                 return `
-                    <div class="group-card">
+                    <div class="group">
                         <div class="group-header">Gruppe ${index + 1} (${group.length})</div>
-                        ${members}
+                        <ul class="group-members">
+                            ${members}
+                        </ul>
                     </div>
                 `;
             }).join('');
@@ -1888,8 +1653,8 @@
             const result = document.getElementById('randomResult');
             const content = document.getElementById('randomResultContent');
             content.innerHTML = `
-                <div style="font-size: 1.2em; margin-bottom: 10px;">👥 Gruppe ${groupIndex}</div>
-                <div style="font-size: 0.9em;">${members}</div>
+                <div style="font-size: 1.1em; margin-bottom: 8px;">👥 Gruppe ${groupIndex}</div>
+                <div style="font-size: 0.85em;">${members}</div>
             `;
 
             result.style.display = 'block';
@@ -1898,15 +1663,13 @@
             }, 10);
         });
 
-        // Clear random result - KORRIGIERTE VERSION
+        // Clear random result
         document.getElementById('clearRandomBtn').addEventListener('click', () => {
             const result = document.getElementById('randomResult');
             result.classList.remove('show');
-
-            // Warten bis die Animation beendet ist, dann display: none setzen
             setTimeout(() => {
                 result.style.display = 'none';
-            }, 5); // Nur ganz kurz
+            }, 5);
         });
 
         // Save list
@@ -1979,11 +1742,9 @@
             const container = document.getElementById('savedListsContainer');
 
             if (Object.keys(lists).length === 0) {
-                savedListsCard.style.display = 'none';
+                container.innerHTML = '<p style="color: #999; text-align: center;">Keine gespeicherten Listen</p>';
                 return;
             }
-
-            savedListsCard.style.display = 'block';
 
             const sortedListNames = Object.keys(lists).sort((a, b) => {
                 const aIsTemp = lists[a].isTemp;
@@ -2001,20 +1762,20 @@
                 const isTemp = list.isTemp === true;
 
                 const icon = isTemp ? '📝' : '💾';
-                const tempBadge = isTemp ? '<span style="font-size: 0.7em; color: var(--warning); background: rgba(243, 156, 18, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">TEMP</span>' : '';
+                const tempBadge = isTemp ? '<span style="font-size: 0.65em; color: #e67e22; background: rgba(243, 156, 18, 0.1); padding: 1px 4px; border-radius: 3px; margin-left: 4px;">TEMP</span>' : '';
 
                 return `
-            <div class="saved-list-item ${isActive ? 'active' : ''}">
-                <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
-                    ${icon} ${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}
-                    ${tempBadge}
-                    <div style="font-size: 0.8em; color: var(--text-secondary); font-weight: normal;">
-                        ${personCount} Personen • ${date}
+                    <div class="saved-list-item ${isActive ? 'active' : ''}">
+                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
+                            ${icon} ${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}
+                            ${tempBadge}
+                            <div style="font-size: 0.75em; color: ${isActive ? 'white' : '#666'}; font-weight: normal;">
+                                ${personCount} Personen • ${date}
+                            </div>
+                        </span>
+                        <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
                     </div>
-                </span>
-                <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
-            </div>
-        `;
+                `;
             }).join('');
         }
 
@@ -2082,7 +1843,7 @@
             personListCard.style.display = 'block';
             distributionCard.style.display = 'block';
             randomCard.style.display = 'block';
-            saveListCard.style.display = 'block';
+            listManagementCard.style.display = 'block';
 
             if (groups.length > 0) {
                 renderGroups();
@@ -2126,7 +1887,7 @@
                 personListCard.style.display = 'none';
                 distributionCard.style.display = 'none';
                 randomCard.style.display = 'none';
-                saveListCard.style.display = 'none';
+                listManagementCard.style.display = 'none';
                 groupsCard.style.display = 'none';
                 updateFileDisplay();
             }

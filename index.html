@@ -7,7 +7,7 @@
     <!-- SheetJS für Excel-Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ========== BASIS: ALTES DESIGN (index_old) ========== */
+        /* ========== BASIS: ÜBERARBEITETES DESIGN ========== */
         * {
             margin: 0;
             padding: 0;
@@ -21,17 +21,18 @@
             padding: 20px;
         }
 
+        /* Container – jetzt transparent, innerer Abstand reduziert */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 20px;
         }
 
         h1 {
-            color: #333;
+            color: white;
             margin-bottom: 30px;
             text-align: center;
             font-size: 2.5em;
@@ -39,6 +40,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         h2 {
@@ -50,18 +52,18 @@
             padding-bottom: 10px;
         }
 
-        /* ----- OPTISCHE BLÖCKE (dezente Struktur) ----- */
+        /* ----- OPTISCHE BLÖCKE (Karten) ----- */
         .block {
             background: white;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f0f0f0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: none;
             transition: box-shadow 0.2s;
         }
         .block:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
         }
 
         /* ----- UPLOAD-BEREICH ----- */
@@ -122,16 +124,14 @@
             text-decoration: none;
             font-weight: 500;
             padding: 6px 12px;
-            background: #f8f9fa;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
             border-radius: 6px;
             transition: 0.2s;
         }
         .help-link:hover, .example-link:hover {
             background: #667eea;
             color: white;
-        }
-        .example-link-right {
-            justify-content: flex-end;
         }
 
         .help-section {
@@ -175,10 +175,10 @@
         }
         .settings-content.show { display: block; }
 
-        /* ----- LISTENVERWALTUNG (mit verstärktem Rahmen) ----- */
+        /* ----- LISTENVERWALTUNG (deutlicher Rahmen) ----- */
         .save-section {
             background: #ffffff;
-            border: 3px solid #667eea;  /* deutlicher Rahmen */
+            border: 2px solid #667eea;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 10px rgba(102, 126, 234, 0.1);
@@ -243,17 +243,24 @@
         }
         .person-stats {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             background: white;
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-weight: 600;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             border: 2px solid #e0e0e0;
         }
         .stat-item { text-align: center; }
-        .stat-value { font-size: 1.3rem; color: #667eea; line-height: 1.2; }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #666; }
+        .stat-value { font-size: 1.5rem; color: #667eea; line-height: 1.2; font-weight: 700; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
+
+        /* Aktions-Buttons nebeneinander, gleichwertig */
+        .person-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
 
         .person-grid {
             display: grid;
@@ -283,8 +290,8 @@
             background: #f0f0f0;
         }
         .person-checkbox {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
         }
 
@@ -296,36 +303,24 @@
         }
         .exclusions-info.show { display: inline; }
 
-        /* ----- NEU: BUTTON "AUSSCHLÜSSE ANZEIGEN" ----- */
-        .btn-exclusions {
-            background: #e0e0e0;
-            border: none;
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: 0.2s;
-        }
-        .btn-exclusions:hover {
-            background: #d0d0d0;
-        }
-
-        /* ----- BUTTONS (altes Design) ----- */
+        /* ----- EINHEITLICHE BUTTONS (überarbeitet) ----- */
         .btn {
             padding: 10px 18px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             font-size: 0.95rem;
             transition: 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            line-height: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         .btn-primary {
             background: #667eea;
@@ -333,7 +328,6 @@
         }
         .btn-primary:hover:not(:disabled) {
             background: #5a67d8;
-            transform: translateY(-2px);
         }
         .btn-success {
             background: #28a745;
@@ -341,7 +335,6 @@
         }
         .btn-success:hover:not(:disabled) {
             background: #218838;
-            transform: translateY(-2px);
         }
         .btn-accent {
             background: #e67e22;
@@ -349,7 +342,6 @@
         }
         .btn-accent:hover:not(:disabled) {
             background: #d35400;
-            transform: translateY(-2px);
         }
         .btn-danger {
             background: #dc3545;
@@ -366,13 +358,14 @@
             background: #5a6268;
         }
         .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.8rem;
+            padding: 8px 14px;
+            font-size: 0.85rem;
         }
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
+            box-shadow: none;
         }
 
         /* ----- VERTEILUNGSEINSTELLUNGEN ----- */
@@ -430,7 +423,7 @@
             transition: width 0.2s;
         }
 
-        /* ----- GRUPPENKARTEN (original alt) ----- */
+        /* ----- GRUPPENKARTEN – ohne Aufzählungszeichen ----- */
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -456,7 +449,13 @@
             padding-bottom: 8px;
             border-bottom: 2px solid rgba(255,255,255,0.3);
         }
+        .group-members {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
         .group-member {
+            list-style: none;
             padding: 6px 10px;
             background: rgba(255,255,255,0.2);
             border-radius: 6px;
@@ -524,13 +523,13 @@
 
         /* ----- RESPONSIVE ----- */
         @media (max-width: 768px) {
-            .container { padding: 25px; }
+            .container { padding: 15px; }
             h1 { font-size: 1.8em; }
             .controls { grid-template-columns: 1fr; }
             .save-controls { flex-direction: column; }
             .groups-container { grid-template-columns: 1fr; }
             .top-bar { flex-direction: column; align-items: flex-start; }
-            .example-link-right { align-self: flex-end; }
+            .person-actions { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -538,18 +537,18 @@
     <div class="container">
         <h1>📊 Gruppenverteiler</h1>
 
-        <!-- ========== BLOCK 1: OBERER BEREICH (Hilfe, Upload, Einstellungen, Listen) ========= -->
+        <!-- ========== BLOCK 1: OBERER BEREICH ========= -->
         <div class="block">
-            <!-- Hilfe + Beispiel-Link (rechts) -->
+            <!-- Hilfe + Beispiel-Link -->
             <div class="top-bar">
                 <div class="help-links">
                     <a href="#" id="showQuickHelp" class="help-link">ℹ️ Schnellstart anzeigen</a>
                     <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">📖 Anleitung</a>
                 </div>
-                <a href="#" id="downloadExample" class="example-link example-link-right">📥 Beispiel-Datei</a>
+                <a href="#" id="downloadExample" class="example-link">📥 Beispiel-Datei</a>
             </div>
 
-            <!-- Schnellstart-Hilfe (einklappbar) -->
+            <!-- Schnellstart-Hilfe -->
             <div class="help-section" id="quickHelp">
                 <div class="help-title">🚀 Schnellstart</div>
                 <p style="font-size: 0.95rem; line-height: 1.5;">
@@ -572,7 +571,7 @@
                 <div style="margin-top: 4px;"><span id="fileStats"></span></div>
             </div>
 
-            <!-- SPALTEN-EINSTELLUNGEN (Toggle) – jetzt oben -->
+            <!-- SPALTEN-EINSTELLUNGEN (Toggle) -->
             <div style="margin-top: 25px;">
                 <div class="settings-toggle" id="settingsToggle">
                     <span>⚙️ Spalten-Einstellungen (bei Bedarf anpassen)</span>
@@ -605,14 +604,14 @@
                 </div>
             </div>
 
-            <!-- LISTENVERWALTUNG (mit verstärktem Rahmen) -->
+            <!-- LISTENVERWALTUNG -->
             <div id="listManagementCard" style="display: none; margin-top: 25px;">
                 <h2>💾 Listen verwalten</h2>
                 <div class="save-section">
                     <div class="save-controls">
                         <input type="text" id="listName" placeholder="Name für neue Liste">
-                        <button class="btn-success" id="saveListBtn" style="flex: 0.3;">Speichern</button>
-                        <button class="btn-secondary" onclick="clearCurrentList()" style="flex: 0.3; background: #6c757d;">Löschen</button>
+                        <button class="btn btn-success" id="saveListBtn" style="flex: 0.3;">Speichern</button>
+                        <button class="btn btn-secondary" onclick="clearCurrentList()" style="flex: 0.3;">Löschen</button>
                     </div>
                     <div id="savedListsContainer" class="saved-lists"></div>
                 </div>
@@ -628,12 +627,10 @@
                     <div class="stat-item"><span class="stat-value" id="activeCount">0</span><div class="stat-label">Aktiv</div></div>
                     <div class="stat-item"><span class="stat-value" id="ignoredCount">0</span><div class="stat-label">Ignoriert</div></div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <button class="btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
-                    <!-- NEU: BUTTON "AUSSCHLÜSSE ANZEIGEN" -->
-                    <button class="btn-exclusions" id="toggleExclusionsBtn">
-                        👁️ <span id="exclusionsToggleText">Ausschlüsse anzeigen</span>
-                    </button>
+                <!-- Verbesserte Button-Anordnung: einheitlich, nebeneinander -->
+                <div class="person-actions">
+                    <button class="btn btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
+                    <button class="btn btn-sm btn-secondary" id="toggleExclusionsBtn">👁️ <span id="exclusionsToggleText">Ausschlüsse anzeigen</span></button>
                 </div>
                 <div id="personList" class="person-grid"></div>
             </div>
@@ -704,8 +701,7 @@
 
     <script>
         // =========================================================================
-        // VOLLSTÄNDIGE, UNABNGEPASSTE LOGIK AUS DER NEUEN INDEX.HTML
-        // (mit einem Fix für den neuen Ausschlüsse-Button)
+        // VOLLSTÄNDIGE LOGIK (unverändert, nur an neue Button-Klassen angepasst)
         // =========================================================================
 
         // State
@@ -946,7 +942,7 @@
             };
         }
 
-        // Toggle exclusions display – angepasst auf Button
+        // Toggle exclusions display
         function toggleExclusionsDisplay() {
             showExclusions = !showExclusions;
             if (exclusionsToggleText) {
@@ -955,7 +951,6 @@
             renderPersonList();
         }
 
-        // Event-Listener für den neuen Button
         if (toggleExclusionsBtn) {
             toggleExclusionsBtn.addEventListener('click', toggleExclusionsDisplay);
         }

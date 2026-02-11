@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="de">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +7,7 @@
     <!-- SheetJS für Excel-Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ========== ALTES DESIGN (index_old) – komplett übernommen ========== */
+        /* ========== BASIS: ALTES DESIGN (index_old) ========== */
         * {
             margin: 0;
             padding: 0;
@@ -16,7 +15,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -44,69 +43,54 @@
 
         h2 {
             color: #333;
-            margin-top: 30px;
+            margin-top: 0;
             margin-bottom: 15px;
             font-size: 1.5em;
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
         }
 
-        /* ===== Upload-Bereich ===== */
-        .upload-section {
+        /* ----- OPTISCHE BLÖCKE (dezente Struktur) ----- */
+        .block {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f0f0f0;
+            transition: box-shadow 0.2s;
+        }
+        .block:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* ----- UPLOAD-BEREICH ----- */
+        .upload-area {
             background: #f8f9fa;
             border: 2px dashed #667eea;
             border-radius: 10px;
-            padding: 30px;
+            padding: 25px;
             text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
+            transition: all 0.2s;
             cursor: pointer;
         }
-
-        .upload-section:hover {
+        .upload-area:hover {
             border-color: #764ba2;
             background: #f0f0ff;
         }
-
-        .upload-section.drag-over {
+        .upload-area.dragover {
             border-color: #28a745;
             background: #e8f5e9;
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
-
         .upload-icon {
             font-size: 2.5rem;
             display: block;
             margin-bottom: 8px;
         }
-
         .file-input {
             display: none;
         }
-
-        .file-name {
-            margin-top: 15px;
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .example-download {
-            display: inline-block;
-            margin-top: 10px;
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 6px 12px;
-            border: 2px solid #667eea;
-            border-radius: 6px;
-            transition: 0.2s;
-        }
-
-        .example-download:hover {
-            background: #667eea;
-            color: white;
-        }
-
         .file-preview {
             background: #f8f9fa;
             padding: 12px 15px;
@@ -117,27 +101,20 @@
             border-left: 4px solid #667eea;
         }
 
-        /* ===== Hilfe-Sektion (neu, aber im alten Look) ===== */
-        .help-section {
-            background: #f0f8ff;
-            border-left: 4px solid #667eea;
-            padding: 16px 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            display: none;
+        /* ----- HILFE & BEISPIEL-LINK (oben rechts) ----- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-
-        .help-section.show {
-            display: block;
+        .help-links {
+            display: flex;
+            gap: 12px;
         }
-
-        .help-title {
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-
-        .help-link {
+        .help-link, .example-link {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -149,177 +126,30 @@
             border-radius: 6px;
             transition: 0.2s;
         }
-
-        .help-link:hover {
+        .help-link:hover, .example-link:hover {
             background: #667eea;
             color: white;
         }
+        .example-link-right {
+            justify-content: flex-end;
+        }
 
-        /* ===== Listenverwaltung (altes Design, neue IDs) ===== */
-        .save-section {
+        .help-section {
             background: #f0f8ff;
-            border: 2px solid #667eea;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .save-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .save-controls input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
             border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .saved-lists {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .saved-list-item {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s;
-        }
-
-        .saved-list-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-        }
-
-        .saved-list-item.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .saved-list-name {
-            font-weight: 600;
-            cursor: pointer;
-            flex: 1;
-        }
-
-        .delete-list-btn {
-            background: none;
-            border: none;
-            color: #dc3545;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0 4px;
-        }
-
-        /* ===== Personenliste ===== */
-        .person-list-section {
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .person-stats {
-            display: flex;
-            justify-content: space-between;
-            background: white;
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-weight: 600;
-            border: 2px solid #e0e0e0;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.3rem;
-            color: #667eea;
-            line-height: 1.2;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #666;
-        }
-
-        .person-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
-            max-height: 350px;
-            overflow-y: auto;
-            margin-top: 15px;
-        }
-
-        .person-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            transition: 0.1s;
-        }
-
-        .person-item:hover {
-            border-color: #667eea;
-            background: #f0f0ff;
-        }
-
-        .person-item.ignored {
-            opacity: 0.6;
-            text-decoration: line-through;
-            background: #f0f0f0;
-        }
-
-        .person-checkbox {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .exclusions-info {
-            font-size: 0.75rem;
-            color: #e67e22;
-            margin-left: 5px;
+            margin-bottom: 25px;
             display: none;
         }
-
-        .exclusions-info.show {
-            display: inline;
+        .help-section.show { display: block; }
+        .help-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
         }
 
-        .exclusions-toggle {
-            cursor: pointer;
-            padding: 4px 10px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            transition: 0.2s;
-        }
-
-        .exclusions-toggle:hover {
-            background: #d0d0d0;
-        }
-
-        /* ===== Settings Toggle (wie gehabt) ===== */
+        /* ----- SPALTEN-EINSTELLUNGEN (Toggle) ----- */
         .settings-toggle {
             background: #f8f9fa;
             border: 2px solid #e0e0e0;
@@ -332,11 +162,9 @@
             margin-bottom: 15px;
             font-weight: 500;
         }
-
         .settings-toggle:hover {
             border-color: #667eea;
         }
-
         .settings-content {
             display: none;
             background: #f8f9fa;
@@ -345,60 +173,247 @@
             margin-bottom: 25px;
             border: 1px solid #e0e0e0;
         }
+        .settings-content.show { display: block; }
 
-        .settings-content.show {
-            display: block;
+        /* ----- LISTENVERWALTUNG (mit verstärktem Rahmen) ----- */
+        .save-section {
+            background: #ffffff;
+            border: 3px solid #667eea;  /* deutlicher Rahmen */
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.1);
+        }
+        .save-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .save-controls input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .saved-lists {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .saved-list-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .saved-list-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.2);
+        }
+        .saved-list-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .saved-list-name {
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+        }
+        .delete-list-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 4px;
         }
 
-        /* ===== Steuerelemente ===== */
+        /* ----- PERSONENLISTE ----- */
+        .person-list-section {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .person-stats {
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            border: 2px solid #e0e0e0;
+        }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.3rem; color: #667eea; line-height: 1.2; }
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; color: #666; }
+
+        .person-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .person-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            transition: 0.1s;
+        }
+        .person-item:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+        .person-item.ignored {
+            opacity: 0.6;
+            text-decoration: line-through;
+            background: #f0f0f0;
+        }
+        .person-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .exclusions-info {
+            font-size: 0.75rem;
+            color: #e67e22;
+            margin-left: 5px;
+            display: none;
+        }
+        .exclusions-info.show { display: inline; }
+
+        /* ----- NEU: BUTTON "AUSSCHLÜSSE ANZEIGEN" ----- */
+        .btn-exclusions {
+            background: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+        .btn-exclusions:hover {
+            background: #d0d0d0;
+        }
+
+        /* ----- BUTTONS (altes Design) ----- */
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        .btn-accent {
+            background: #e67e22;
+            color: white;
+        }
+        .btn-accent:hover:not(:disabled) {
+            background: #d35400;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ----- VERTEILUNGSEINSTELLUNGEN ----- */
         .controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
-
         .control-group {
             display: flex;
             flex-direction: column;
         }
-
         label {
             font-weight: 600;
             margin-bottom: 8px;
             color: #333;
         }
-
-        input[type="number"],
-        select {
+        input[type="number"], select {
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s;
+            transition: 0.2s;
         }
-
-        input[type="number"]:focus,
-        select:focus,
-        input[type="text"]:focus {
-            outline: none;
+        input:focus, select:focus {
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
         }
-
         .radio-group {
             display: flex;
             gap: 15px;
             align-items: center;
         }
-
         .radio-option {
             display: flex;
             align-items: center;
             gap: 5px;
             cursor: pointer;
         }
-
         .progress-bar {
             width: 100%;
             height: 4px;
@@ -408,7 +423,6 @@
             margin-top: 12px;
             display: none;
         }
-
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #667eea, #764ba2);
@@ -416,128 +430,40 @@
             transition: width 0.2s;
         }
 
-        /* ===== Buttons (altes Design) ===== */
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        button {
-            flex: 1;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        .btn-accent {
-            background: #e67e22;
-            color: white;
-        }
-
-        .btn-accent:hover:not(:disabled) {
-            background: #d35400;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: #c82333;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #5a6268;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
-        /* ===== Gruppenkarten (original alt) ===== */
+        /* ----- GRUPPENKARTEN (original alt) ----- */
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-top: 30px;
+            margin-top: 20px;
         }
-
         .group {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
             padding: 20px;
             color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
         }
-
         .group:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
-
         .group-header {
-            font-size: 1.3em;
+            font-size: 1.2rem;
             font-weight: bold;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
         }
-
-        .group-members {
-            list-style: none;
-        }
-
-        .group-members li {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.2);
-            margin-bottom: 8px;
+        .group-member {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.2);
             border-radius: 6px;
-            backdrop-filter: blur(10px);
+            margin-bottom: 5px;
         }
 
-        /* ===== Zufallsauswahl (altes Design + Clear-Button) ===== */
+        /* ----- ZUFALLSAUSWAHL ----- */
         .random-result {
             background: #f0f8ff;
             border: 2px solid #667eea;
@@ -548,16 +474,12 @@
             display: none;
             position: relative;
         }
-
-        .random-result.show {
-            display: block;
-        }
-
+        .random-result.show { display: block; }
         .random-clear-btn {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.05);
+            background: rgba(0,0,0,0.05);
             border: none;
             border-radius: 50%;
             width: 30px;
@@ -566,7 +488,7 @@
             font-size: 1rem;
         }
 
-        /* ===== Toast (neu, aber dezent) ===== */
+        /* ----- TOAST (Benachrichtigung) ----- */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -574,7 +496,7 @@
             padding: 12px 20px;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -584,174 +506,147 @@
             border-left: 4px solid #28a745;
             z-index: 1000;
         }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #dc3545; }
+        .toast.warning { border-left-color: #e67e22; }
 
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast.error {
-            border-left-color: #dc3545;
-        }
-
-        .toast.warning {
-            border-left-color: #e67e22;
-        }
-
-        /* ===== Responsive ===== */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .controls {
-                grid-template-columns: 1fr;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            .groups-container {
-                grid-template-columns: 1fr;
-            }
-
-            .save-controls {
-                flex-direction: column;
-            }
-        }
-
+        /* ----- LADEANIMATION ----- */
         .loading {
             display: inline-block;
             width: 16px;
             height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 0.6s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 768px) {
+            .container { padding: 25px; }
+            h1 { font-size: 1.8em; }
+            .controls { grid-template-columns: 1fr; }
+            .save-controls { flex-direction: column; }
+            .groups-container { grid-template-columns: 1fr; }
+            .top-bar { flex-direction: column; align-items: flex-start; }
+            .example-link-right { align-self: flex-end; }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>📊 Gruppenverteiler</h1>
 
-        <!-- ===== HILFE (neu, aber im alten Look) ===== -->
-        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-            <a href="#" id="showQuickHelp" class="help-link">ℹ️ Schnellstart anzeigen</a>
-            <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">📖 Vollständige
-                Anleitung</a>
-        </div>
-        <div class="help-section" id="quickHelp">
-            <div class="help-title">🚀 Schnellstart</div>
-            <p style="font-size: 0.95rem; line-height: 1.5;">
-                1. <strong>Datei hochladen</strong> (Excel/CSV, Vorname in Spalte A)<br>
-                2. <strong>Personen prüfen</strong> – klicken zum Ignorieren<br>
-                3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
-                4. <strong>Gruppen einteilen</strong> und exportieren
-            </p>
-        </div>
-
-        <!-- ===== UPLOAD (alte Optik, neue IDs) ===== -->
-        <div class="upload-section" id="uploadArea">
-            <span class="upload-icon">⬆️</span>
-            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Datei ablegen oder klicken</div>
-            <div style="color: #666; font-size: 0.9rem;">Excel (.xlsx, .xls) oder CSV</div>
-            <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
-        </div>
-        <a href="#" id="downloadExample" class="example-download">📥 Beispiel-Datei herunterladen</a>
-        <div id="filePreview" class="file-preview">
-            <strong>Geladen:</strong> <span id="fileName"></span>
-            <div style="margin-top: 4px;"><span id="fileStats"></span></div>
-        </div>
-
-        <!-- ===== LISTENVERWALTUNG (alte Speicher-Sektion, neue IDs) ===== -->
-        <div id="listManagementCard" style="display: none;">
-            <h2>💾 Listen verwalten</h2>
-            <div class="save-section">
-                <div class="save-controls">
-                    <input type="text" id="listName" placeholder="Name für neue Liste">
-                    <button class="btn-success" id="saveListBtn" style="flex: 0.3;">Speichern</button>
-                    <button class="btn-secondary" onclick="clearCurrentList()"
-                        style="flex: 0.3; background: #6c757d;">Löschen</button>
+        <!-- ========== BLOCK 1: OBERER BEREICH (Hilfe, Upload, Einstellungen, Listen) ========= -->
+        <div class="block">
+            <!-- Hilfe + Beispiel-Link (rechts) -->
+            <div class="top-bar">
+                <div class="help-links">
+                    <a href="#" id="showQuickHelp" class="help-link">ℹ️ Schnellstart anzeigen</a>
+                    <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">📖 Anleitung</a>
                 </div>
-                <div id="savedListsContainer" class="saved-lists"></div>
+                <a href="#" id="downloadExample" class="example-link example-link-right">📥 Beispiel-Datei</a>
+            </div>
+
+            <!-- Schnellstart-Hilfe (einklappbar) -->
+            <div class="help-section" id="quickHelp">
+                <div class="help-title">🚀 Schnellstart</div>
+                <p style="font-size: 0.95rem; line-height: 1.5;">
+                    1. <strong>Datei hochladen</strong> (Excel/CSV, Vorname in Spalte A)<br>
+                    2. <strong>Personen prüfen</strong> – klicken zum Ignorieren<br>
+                    3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
+                    4. <strong>Gruppen einteilen</strong> und exportieren
+                </p>
+            </div>
+
+            <!-- Upload -->
+            <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">⬆️</span>
+                <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Datei ablegen oder klicken</div>
+                <div style="color: #666; font-size: 0.9rem;">Excel (.xlsx, .xls) oder CSV</div>
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+            </div>
+            <div id="filePreview" class="file-preview">
+                <strong>Geladen:</strong> <span id="fileName"></span>
+                <div style="margin-top: 4px;"><span id="fileStats"></span></div>
+            </div>
+
+            <!-- SPALTEN-EINSTELLUNGEN (Toggle) – jetzt oben -->
+            <div style="margin-top: 25px;">
+                <div class="settings-toggle" id="settingsToggle">
+                    <span>⚙️ Spalten-Einstellungen (bei Bedarf anpassen)</span>
+                    <span id="toggleIcon">▼</span>
+                </div>
+                <div class="settings-content" id="settingsContent">
+                    <div class="controls" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 0;">
+                        <div class="control-group">
+                            <label for="colFirstName">Spalte Vorname (0 = A)</label>
+                            <input type="number" id="colFirstName" value="0" min="0">
+                            <span style="font-size: 0.8rem; color: #666;">Spalte A = 0, B = 1, …</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="colLastName">Spalte Nachname (-1 = keine)</label>
+                            <input type="number" id="colLastName" value="-1" min="-1">
+                            <span style="font-size: 0.8rem; color: #666;">-1 = keine Nachnamenspalte</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="colExclusions">Spalte Ausschlüsse (-1 = keine)</label>
+                            <input type="number" id="colExclusions" value="1" min="-1">
+                            <span style="font-size: 0.8rem; color: #666;">Komma-getrennt, z.B. "Anna, Peter"</span>
+                        </div>
+                        <div class="control-group" style="justify-content: flex-end;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="skipFirstRow" checked>
+                                <span>Erste Zeile ignorieren (Überschrift)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTENVERWALTUNG (mit verstärktem Rahmen) -->
+            <div id="listManagementCard" style="display: none; margin-top: 25px;">
+                <h2>💾 Listen verwalten</h2>
+                <div class="save-section">
+                    <div class="save-controls">
+                        <input type="text" id="listName" placeholder="Name für neue Liste">
+                        <button class="btn-success" id="saveListBtn" style="flex: 0.3;">Speichern</button>
+                        <button class="btn-secondary" onclick="clearCurrentList()" style="flex: 0.3; background: #6c757d;">Löschen</button>
+                    </div>
+                    <div id="savedListsContainer" class="saved-lists"></div>
+                </div>
             </div>
         </div>
 
-        <!-- ===== PERSONENLISTE (alte Sektion, neue Elemente) ===== -->
-        <div id="personListCard" style="display: none;">
+        <!-- ========== BLOCK 2: PERSONENLISTE ========= -->
+        <div id="personListCard" style="display: none;" class="block">
             <h2>👥 Personen (klicken zum Ignorieren)</h2>
             <div class="person-list-section">
                 <div class="person-stats">
-                    <div class="stat-item"><span class="stat-value" id="totalCount">0</span>
-                        <div class="stat-label">Gesamt</div>
-                    </div>
-                    <div class="stat-item"><span class="stat-value" id="activeCount">0</span>
-                        <div class="stat-label">Aktiv</div>
-                    </div>
-                    <div class="stat-item"><span class="stat-value" id="ignoredCount">0</span>
-                        <div class="stat-label">Ignoriert</div>
-                    </div>
+                    <div class="stat-item"><span class="stat-value" id="totalCount">0</span><div class="stat-label">Gesamt</div></div>
+                    <div class="stat-item"><span class="stat-value" id="activeCount">0</span><div class="stat-label">Aktiv</div></div>
+                    <div class="stat-item"><span class="stat-value" id="ignoredCount">0</span><div class="stat-label">Ignoriert</div></div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <button class="btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
-                    <span class="exclusions-toggle" id="toggleExclusions">👁️ Ausschlüsse anzeigen</span>
+                    <!-- NEU: BUTTON "AUSSCHLÜSSE ANZEIGEN" -->
+                    <button class="btn-exclusions" id="toggleExclusionsBtn">
+                        👁️ <span id="exclusionsToggleText">Ausschlüsse anzeigen</span>
+                    </button>
                 </div>
                 <div id="personList" class="person-grid"></div>
             </div>
         </div>
 
-        <!-- ===== SPALTEN-EINSTELLUNGEN (Toggle – wie gehabt) ===== -->
-        <div class="settings-toggle" id="settingsToggle">
-            <span>⚙️ Spalten-Einstellungen (bei Bedarf anpassen)</span>
-            <span id="toggleIcon">▼</span>
-        </div>
-        <div class="settings-content" id="settingsContent">
-            <div class="controls" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 0;">
-                <div class="control-group">
-                    <label for="colFirstName">Spalte Vorname (0 = A)</label>
-                    <input type="number" id="colFirstName" value="0" min="0">
-                    <span style="font-size: 0.8rem; color: #666;">Spalte A = 0, B = 1, …</span>
-                </div>
-                <div class="control-group">
-                    <label for="colLastName">Spalte Nachname (-1 = keine)</label>
-                    <input type="number" id="colLastName" value="-1" min="-1">
-                    <span style="font-size: 0.8rem; color: #666;">-1 = keine Nachnamenspalte</span>
-                </div>
-                <div class="control-group">
-                    <label for="colExclusions">Spalte Ausschlüsse (-1 = keine)</label>
-                    <input type="number" id="colExclusions" value="1" min="-1">
-                    <span style="font-size: 0.8rem; color: #666;">Komma-getrennt, z.B. "Anna, Peter"</span>
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="skipFirstRow" checked>
-                        <span>Erste Zeile ignorieren (Überschrift)</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== AUFTEILUNGSEINSTELLUNGEN (alte Controls, neue IDs) ===== -->
-        <div id="distributionCard" style="display: none;">
+        <!-- ========== BLOCK 3: AUFTEILUNGS-EINSTELLUNGEN ========= -->
+        <div id="distributionCard" style="display: none;" class="block">
             <h2>⚙️ Aufteilung</h2>
             <div class="controls">
                 <div class="control-group">
                     <label>Modus</label>
                     <div class="radio-group">
-                        <label class="radio-option"><input type="radio" name="mode" value="count" checked> Anzahl
-                            Gruppen</label>
+                        <label class="radio-option"><input type="radio" name="mode" value="count" checked> Anzahl Gruppen</label>
                         <label class="radio-option"><input type="radio" name="mode" value="size"> Gruppengröße</label>
                     </div>
                 </div>
@@ -763,38 +658,36 @@
             <div id="restModeGroup" style="display: none; margin-bottom: 20px;">
                 <label style="font-weight: 600;">Rest-Modus (bei Gruppengröße)</label>
                 <div class="radio-group" style="margin-top: 8px;">
-                    <label class="radio-option"><input type="radio" name="restMode" value="distribute" checked>
-                        Verteilen</label>
-                    <label class="radio-option"><input type="radio" name="restMode" value="separate"> Kleinere
-                        Gruppen</label>
+                    <label class="radio-option"><input type="radio" name="restMode" value="distribute" checked> Verteilen</label>
+                    <label class="radio-option"><input type="radio" name="restMode" value="separate"> Kleinere Gruppen</label>
                 </div>
                 <span class="form-hint" id="restModeHint" style="display: block; margin-top: 6px; color: #666;"></span>
             </div>
 
-            <div class="button-group">
-                <button class="btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
-                <div class="progress-bar" id="distributionProgress" style="margin-top: 0; align-self: center;">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
+                <div class="progress-bar" id="distributionProgress" style="flex: 1; max-width: 200px;">
                     <div class="progress-fill"></div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== GRUPPENANZEIGE (original alt) ===== -->
-        <div id="groupsCard" style="display: none;">
+        <!-- ========== BLOCK 4: GRUPPENEINTEILUNG ========= -->
+        <div id="groupsCard" style="display: none;" class="block">
             <h2>🎯 Gruppeneinteilung</h2>
             <div id="groupsContainer" class="groups-container"></div>
-            <div class="button-group" style="margin-top: 30px;">
-                <button class="btn-success" id="exportBtn">💾 Als Excel exportieren</button>
-                <button class="btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button class="btn btn-success" id="exportBtn">💾 Als Excel exportieren</button>
+                <button class="btn btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
             </div>
         </div>
 
-        <!-- ===== ZUFALSAUSWAHL (altes Design + Clear) ===== -->
-        <div id="randomCard" style="display: none; margin-top: 40px;">
+        <!-- ========== BLOCK 5: ZUFALLSAUSWAHL ========= -->
+        <div id="randomCard" style="display: none;" class="block">
             <h2>🎲 Zufallsauswahl</h2>
             <div style="display: flex; gap: 15px;">
-                <button class="btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
-                <button class="btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
+                <button class="btn btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
+                <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
             </div>
             <div id="randomResult" class="random-result">
                 <div id="randomResultContent" style="font-size: 1.3em;"></div>
@@ -812,7 +705,7 @@
     <script>
         // =========================================================================
         // VOLLSTÄNDIGE, UNABNGEPASSTE LOGIK AUS DER NEUEN INDEX.HTML
-        // (KEINE EINZIGE ÄNDERUNG – 100% Funktionsumfang)
+        // (mit einem Fix für den neuen Ausschlüsse-Button)
         // =========================================================================
 
         // State
@@ -846,6 +739,8 @@
         const randomCard = document.getElementById('randomCard');
         const listManagementCard = document.getElementById('listManagementCard');
         const quickHelp = document.getElementById('quickHelp');
+        const toggleExclusionsBtn = document.getElementById('toggleExclusionsBtn');
+        const exclusionsToggleText = document.getElementById('exclusionsToggleText');
 
         // Toggle quick help
         document.getElementById('showQuickHelp').addEventListener('click', (e) => {
@@ -1051,12 +946,18 @@
             };
         }
 
-        // Toggle exclusions display
+        // Toggle exclusions display – angepasst auf Button
         function toggleExclusionsDisplay() {
             showExclusions = !showExclusions;
-            const toggleText = document.getElementById('exclusionsToggleText');
-            toggleText.textContent = showExclusions ? 'Ausschlüsse ausblenden' : 'Ausschlüsse anzeigen';
+            if (exclusionsToggleText) {
+                exclusionsToggleText.textContent = showExclusions ? 'Ausschlüsse ausblenden' : 'Ausschlüsse anzeigen';
+            }
             renderPersonList();
+        }
+
+        // Event-Listener für den neuen Button
+        if (toggleExclusionsBtn) {
+            toggleExclusionsBtn.addEventListener('click', toggleExclusionsDisplay);
         }
 
         // Save state to localStorage
@@ -1927,9 +1828,6 @@
         loadSavedLists();
         loadState();
 
-        // Add event listener for exclusions toggle
-        document.getElementById('toggleExclusions').addEventListener('click', toggleExclusionsDisplay);
-
         // Show welcome message
         setTimeout(() => {
             if (people.length === 0) {
@@ -1938,5 +1836,4 @@
         }, 1000);
     </script>
 </body>
-
 </html>

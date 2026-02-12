@@ -874,7 +874,7 @@
 
     <script>
         // =========================================================================
-        // VOLLSTÄNDIGE LOGIK (unverändert, nur an neue Button-Klassen angepasst)
+        // VOLLSTÄNDIGE LOGIK (mit Migrationsschicht für alte localStorage-Daten)
         // =========================================================================
 
         // State
@@ -886,7 +886,7 @@
         let isLoadingList = false;
         let showExclusions = false;
 
-        // LocalStorage keys
+        // LocalStorage keys (neu)
         const STORAGE_KEYS = {
             PEOPLE: 'gruppenverteiler_people',
             GROUPS: 'gruppenverteiler_groups',
@@ -911,13 +911,104 @@
         const toggleExclusionsBtn = document.getElementById('toggleExclusionsBtn');
         const exclusionsToggleText = document.getElementById('exclusionsToggleText');
 
-        // Toggle quick help
-        document.getElementById('showQuickHelp').addEventListener('click', (e) => {
-            e.preventDefault();
-            quickHelp.classList.toggle('show');
-        });
+        // ----- MIGRATIONSHELFER (Alt → Neu) ------------------------------------
+        function convertOldListToNew(oldList, isTemp = false) {
+            const data = oldList.data || [];
+            const ignoredIndices = new Set(oldList.ignoredPersons || []);
+            const oldGroups = oldList.groups || [];
+            const oldSettings = oldList.settings || {};
+            const timestamp = oldList.timestamp || new Date().toISOString();
 
-        // Toast notification
+            // Spalteneinstellungen (alt)
+            const skipFirst = oldSettings.ignoreFirstRow !== false; // default true
+            const colFirst = oldSettings.nameColumn ?? 0;
+            const colLast = oldSettings.lastNameColumn ?? -1;
+            const colExcl = oldSettings.exclusionColumn ?? 1;
+
+            // ----- Personen extrahieren -----
+            const peopleArray = [];
+            const startIdx = skipFirst ? 1 : 0;
+            for (let i = startIdx; i < data.length; i++) {
+                const row = data[i];
+                if (!row || !row[colFirst]) continue;
+                const firstName = row[colFirst].toString().trim();
+                if (firstName === '') continue;
+
+                const lastName = (colLast >= 0 && row[colLast]) ? row[colLast].toString().trim() : '';
+                let exclusions = [];
+                if (colExcl >= 0 && row[colExcl]) {
+                    exclusions = row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e);
+                }
+
+                peopleArray.push({
+                    firstName,
+                    lastName,
+                    exclusions,
+                    ignored: ignoredIndices.has(i),     // original row index
+                    originalIndex: i,                   // wichtig für Gruppen‑Mapping
+                    displayName: firstName             // wird später überschrieben
+                });
+            }
+
+            // ----- Vornamen zählen & displayName korrigieren -----
+            const fNameCount = {};
+            peopleArray.forEach(p => fNameCount[p.firstName] = (fNameCount[p.firstName] || 0) + 1);
+            peopleArray.forEach(p => {
+                if (fNameCount[p.firstName] > 1 && p.lastName) {
+                    const lastNamePart = p.lastName.substring(0, 3);
+                    p.displayName = `${p.firstName} ${lastNamePart}.`;
+                } else {
+                    p.displayName = p.firstName;
+                }
+            });
+
+            // ----- Mapping: originalIndex → Person (für Gruppen) -----
+            const personMap = new Map();
+            peopleArray.forEach(p => personMap.set(p.originalIndex, p));
+
+            // ----- Gruppen konvertieren (Referenzen auf die neuen Personen) -----
+            const newGroups = [];
+            for (const oldGroup of oldGroups) {
+                const newGroup = [];
+                for (const oldPerson of oldGroup) {
+                    // Alte Personen im Gruppenobjekt haben eine .index Eigenschaft
+                    const idx = oldPerson.index;
+                    if (idx !== undefined && personMap.has(idx)) {
+                        newGroup.push(personMap.get(idx));
+                    } else {
+                        // Fallback: über Namen + Nachname suchen (sollte nicht nötig sein)
+                        const match = peopleArray.find(p =>
+                            p.firstName === oldPerson.firstName &&
+                            p.lastName === oldPerson.lastName
+                        );
+                        if (match) newGroup.push(match);
+                    }
+                }
+                newGroups.push(newGroup);
+            }
+
+            // ----- Einstellungen übersetzen (alt → neu) -----
+            const newSettings = {
+                colFirstName: oldSettings.nameColumn ?? 0,
+                colLastName: oldSettings.lastNameColumn ?? -1,
+                colExclusions: oldSettings.exclusionColumn ?? 1,
+                skipFirstRow: oldSettings.ignoreFirstRow !== false,
+                mode: oldSettings.divisionMode === 'size' ? 'size' : 'count',
+                distributionValue: oldSettings.groupValue ?? 3,
+                restMode: oldSettings.remainderMode === 'separate' ? 'separate' : 'distribute'
+            };
+
+            return {
+                people: peopleArray,
+                groups: newGroups,
+                settings: newSettings,
+                timestamp,
+                isTemp,
+                migrated: true
+            };
+        }
+
+        // ----- Toast (unverändert) ---------------------------------------------
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const toastIcon = document.getElementById('toastIcon');
@@ -1191,8 +1282,95 @@
             }
         }
 
-        // Load state from localStorage
+        // ========== MIGRIERUNG ALTER DATEN (groupLists, lastDistribution, groupSettings) ==========
         function loadState() {
+            // ----- Migration: nur einmal ausführen ---------------------------------
+            try {
+                const MIGRATION_FLAG = 'migration_v1_done';
+                if (!localStorage.getItem(MIGRATION_FLAG)) {
+                    let migrated = false;
+
+                    // 1. groupLists → savedLists
+                    const oldGroupLists = localStorage.getItem('groupLists');
+                    if (oldGroupLists) {
+                        const oldLists = JSON.parse(oldGroupLists);
+                        let savedLists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+                        for (const [oldName, oldList] of Object.entries(oldLists)) {
+                            const newList = convertOldListToNew(oldList, false);
+                            let newKey = `[SAVED] ${oldName}`;
+                            let counter = 1;
+                            while (savedLists[newKey]) {
+                                newKey = `[SAVED] ${oldName} (migriert ${counter})`;
+                                counter++;
+                            }
+                            savedLists[newKey] = newList;
+                            migrated = true;
+                        }
+                        localStorage.setItem('savedLists', JSON.stringify(savedLists));
+                    }
+
+                    // 2. lastDistribution → temporäre Liste
+                    const oldLastDist = localStorage.getItem('lastDistribution');
+                    if (oldLastDist) {
+                        const lastDist = JSON.parse(oldLastDist);
+                        const tempList = convertOldListToNew(lastDist, true);
+                        let savedLists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+                        let tempKey = `[TEMP] Letzte Verteilung (migriert)`;
+                        let counter = 1;
+                        while (savedLists[tempKey]) {
+                            tempKey = `[TEMP] Letzte Verteilung (migriert ${counter})`;
+                            counter++;
+                        }
+                        savedLists[tempKey] = tempList;
+                        localStorage.setItem('savedLists', JSON.stringify(savedLists));
+                        // Als aktuelle Liste vorschlagen, falls noch keine gesetzt ist
+                        if (!localStorage.getItem(STORAGE_KEYS.CURRENT_LIST)) {
+                            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, tempKey);
+                        }
+                        migrated = true;
+                    }
+
+                    // 3. groupSettings → neue Settings (nur wenn keine neuen existieren)
+                    if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
+                        const oldSettings = localStorage.getItem('groupSettings');
+                        if (oldSettings) {
+                            const sets = JSON.parse(oldSettings);
+                            if (sets.nameColumn !== undefined) document.getElementById('colFirstName').value = sets.nameColumn;
+                            if (sets.lastNameColumn !== undefined) document.getElementById('colLastName').value = sets.lastNameColumn;
+                            if (sets.exclusionColumn !== undefined) document.getElementById('colExclusions').value = sets.exclusionColumn;
+                            if (sets.ignoreFirstRow !== undefined) document.getElementById('skipFirstRow').checked = sets.ignoreFirstRow;
+                            if (sets.divisionMode) {
+                                const modeRadio = document.querySelector(`input[name="mode"][value="${sets.divisionMode}"]`);
+                                if (modeRadio) {
+                                    modeRadio.checked = true;
+                                    modeRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                            if (sets.groupValue) document.getElementById('distributionValue').value = sets.groupValue;
+                            if (sets.remainderMode) {
+                                const restRadio = document.querySelector(`input[name="restMode"][value="${sets.remainderMode}"]`);
+                                if (restRadio) {
+                                    restRadio.checked = true;
+                                    restRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                            migrated = true;
+                        }
+                    }
+
+                    if (migrated) {
+                        localStorage.setItem(MIGRATION_FLAG, 'true');
+                        // UI der gespeicherten Listen sofort aktualisieren
+                        loadSavedLists();
+                        showToast('Alte gespeicherte Listen wurden importiert.', 'info');
+                    }
+                }
+            } catch (e) {
+                console.error('Fehler bei der Migration alter Daten:', e);
+            }
+
+            // ----- BISHERIGE loadState-LOGIK (unverändert) -------------------------
             try {
                 const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
 
@@ -1515,12 +1693,12 @@
         }
 
         // Toggle person
-        function togglePerson(index) {
+        window.togglePerson = function(index) {
             people[index].ignored = !people[index].ignored;
             renderPersonList();
             updateRestModeHint();
             saveState();
-        }
+        };
 
         // Update stats
         function updateStats() {
@@ -1794,7 +1972,7 @@
         });
 
         // Clear current list
-        function clearCurrentList() {
+        window.clearCurrentList = function() {
             if (!currentListName) {
                 showToast('Keine Liste geladen!', 'warning');
                 return;
@@ -1803,7 +1981,7 @@
             if (confirm(`Möchten Sie die aktuell geladene Liste "${currentListName}" aus dem Speicher löschen?`)) {
                 deleteList(currentListName);
             }
-        }
+        };
 
         // Load saved lists
         function loadSavedLists() {
@@ -1849,7 +2027,7 @@
         }
 
         // Load specific list
-        function loadList(name, silent = false) {
+        window.loadList = function(name, silent = false) {
             if (currentListName === name && !silent) {
                 showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" ist bereits geladen`, 'info');
                 return;
@@ -1935,10 +2113,10 @@
             if (!silent) {
                 showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" geladen!`);
             }
-        }
+        };
 
         // Delete list
-        function deleteList(name) {
+        window.deleteList = function(name) {
             if (!confirm(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wirklich löschen?`)) return;
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
@@ -1968,7 +2146,7 @@
 
             loadSavedLists();
             showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" gelöscht`);
-        }
+        };
 
         // Download example file
         document.getElementById('downloadExample').addEventListener('click', (e) => {

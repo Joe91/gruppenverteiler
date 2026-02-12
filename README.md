@@ -2,6 +2,8 @@
 
 Eine praktische Webseite zur automatisierten Verwaltung und Verteilung von Gruppen. Die Anwendung ermöglicht es, Teilnehmer effizient in Arbeitsgruppen, Kurse oder Teams einzuteilen.
 
+Link: https://joe91.github.io/gruppenverteiler
+
 ## 🎯 Hauptfunktionen
 
 - **Automatische Gruppenverteilung**: Intelligente Algorithmen verteilen Teilnehmer gleichmäßig auf mehrere Gruppen

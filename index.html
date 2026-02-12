@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gruppeneinteilung mit Speicherfunktion</title>
+    <title>Gruppenverteiler – intelligente Gruppeneinteilung</title>
+    <!-- SheetJS für Excel-Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* ========== BASIS: ÜBERARBEITETES DESIGN ========== */
         * {
             margin: 0;
             padding: 0;
@@ -14,99 +16,200 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
 
+        /* Container – jetzt transparent, innerer Abstand reduziert */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 20px;
         }
 
         h1 {
-            color: #333;
+            color: white;
             margin-bottom: 30px;
             text-align: center;
             font-size: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         h2 {
             color: #333;
-            margin-top: 30px;
+            margin-top: 0;
             margin-bottom: 15px;
             font-size: 1.5em;
             border-bottom: 2px solid #667eea;
             padding-bottom: 10px;
         }
 
-        .upload-section {
+        /* ----- OPTISCHE BLÖCKE (Karten) ----- */
+        .block {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: none;
+            transition: box-shadow 0.2s;
+        }
+
+        .block:hover {
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ----- UPLOAD-BEREICH ----- */
+        .upload-area {
             background: #f8f9fa;
             border: 2px dashed #667eea;
             border-radius: 10px;
-            padding: 30px;
+            padding: 25px;
             text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            cursor: pointer;
         }
 
-        .upload-section:hover {
+        .upload-area:hover {
             border-color: #764ba2;
             background: #f0f0ff;
         }
 
-        .upload-section.drag-over {
+        .upload-area.dragover {
             border-color: #28a745;
             background: #e8f5e9;
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
+        .upload-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 8px;
         }
 
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: -9999px;
+        .file-input {
+            display: none;
         }
 
-        .file-input-label {
-            display: inline-block;
-            padding: 15px 30px;
+        .file-preview {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-top: 15px;
+            display: none;
+            border-left: 4px solid #667eea;
+        }
+
+        /* ----- HILFE & BEISPIEL-LINK (oben rechts) ----- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .help-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .help-link,
+        .example-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        .help-link:hover,
+        .example-link:hover {
             background: #667eea;
             color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s;
         }
 
-        .file-input-label:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .save-section {
+        .help-section {
             background: #f0f8ff;
-            border: 2px solid #667eea;
-            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .help-section.show {
+            display: block;
+        }
+
+        .help-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        /* ----- SPALTEN-EINSTELLUNGEN (Toggle) ----- */
+        .settings-toggle {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .settings-toggle:hover {
+            border-color: #667eea;
+        }
+
+        .settings-content {
+            display: none;
+            background: #f8f9fa;
             padding: 20px;
-            margin-bottom: 30px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .settings-content.show {
+            display: block;
+        }
+
+        /* ----- LISTENVERWALTUNG (deutlicher Rahmen) ----- */
+        .save-section {
+            background: #ffffff;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.1);
         }
 
         .save-controls {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 15px;
+            align-items: stretch;
         }
 
         .save-controls input[type="text"] {
@@ -115,6 +218,11 @@
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
+        }
+
+        .save-controls .btn {
+            flex: 0 0 auto;
+            min-width: 120px;
         }
 
         .saved-lists {
@@ -132,7 +240,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.3s;
+            transition: 0.2s;
         }
 
         .saved-list-item:hover {
@@ -152,71 +260,213 @@
             flex: 1;
         }
 
-        .saved-list-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .btn-small {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
+        .delete-list-btn {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            color: #666;
             cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s;
+            font-size: 1rem;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1.2;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .btn-delete {
-            background: #dc3545;
-            color: white;
+        .delete-list-btn:hover {
+            background: #f5f5f5;
+            border-color: #dc3545;
+            color: #dc3545;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
         }
 
-        .btn-delete:hover {
-            background: #c82333;
-        }
-
-        .person-list {
+        /* ----- PERSONENLISTE ----- */
+        .person-list-section {
             background: #f8f9fa;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             padding: 20px;
-            margin-bottom: 30px;
-            max-height: 400px;
+        }
+
+        .person-stats {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 2px solid #e0e0e0;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            color: #667eea;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* Aktions-Buttons nebeneinander, gleichwertig */
+        .person-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .person-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            max-height: 350px;
             overflow-y: auto;
+            margin-top: 15px;
         }
 
         .person-item {
             display: flex;
             align-items: center;
-            padding: 10px;
+            gap: 8px;
+            padding: 8px 10px;
             background: white;
-            margin-bottom: 8px;
+            border: 2px solid #e0e0e0;
             border-radius: 6px;
-            transition: all 0.3s;
+            transition: 0.1s;
+        }
+
+        .person-item:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
         }
 
         .person-item.ignored {
-            opacity: 0.5;
-            background: #f0f0f0;
+            opacity: 0.6;
             text-decoration: line-through;
+            background: #f0f0f0;
         }
 
-        .person-item input[type="checkbox"] {
-            margin-right: 12px;
+        .person-checkbox {
             width: 18px;
             height: 18px;
             cursor: pointer;
         }
 
-        .person-name {
-            flex: 1;
+        .exclusions-info {
+            font-size: 0.75rem;
+            color: #e67e22;
+            margin-left: 5px;
+            display: none;
         }
 
+        .exclusions-info.show {
+            display: inline;
+        }
+
+        /* ----- EINHEITLICHE BUTTONS (überarbeitet) ----- */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1.2;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5a67d8;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-accent {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            background: #d35400;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            padding: 10px 22px;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-sm {
+            padding: 10px 18px;
+            font-size: 0.9rem;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+
+        /* ----- VERTEILUNGSEINSTELLUNGEN ----- */
         .controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .control-group {
@@ -236,90 +486,52 @@
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s;
+            transition: 0.2s;
         }
 
-        input[type="number"]:focus,
-        select:focus,
-        input[type="text"]:focus {
-            outline: none;
+        input:focus,
+        select:focus {
             border-color: #667eea;
+            outline: none;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .button-group {
+        .radio-group {
             display: flex;
             gap: 15px;
-            margin-bottom: 30px;
+            align-items: center;
         }
 
-        button {
-            flex: 1;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
             cursor: pointer;
-            transition: all 0.3s;
         }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 12px;
+            display: none;
         }
 
-        .btn-primary:hover:not(:disabled) {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.2s;
         }
 
-        .btn-secondary {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        .btn-save {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-save:hover:not(:disabled) {
-            background: #138496;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
-        }
-
-        .btn-subtle {
-            background: #6c757d;
-            color: white;
-            font-size: 14px;
-        }
-
-        .btn-subtle:hover:not(:disabled) {
-            background: #5a6268;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
+        /* ----- GRUPPENKARTEN – ohne Aufzählungszeichen ----- */
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin-top: 30px;
+            margin-top: 20px;
         }
 
         .group {
@@ -328,7 +540,7 @@
             padding: 20px;
             color: white;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
+            transition: 0.3s;
         }
 
         .group:hover {
@@ -337,48 +549,122 @@
         }
 
         .group-header {
-            font-size: 1.3em;
+            font-size: 1.2rem;
             font-weight: bold;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .group-members {
             list-style: none;
+            padding-left: 0;
+            margin: 0;
         }
 
-        .group-members li {
-            padding: 8px 12px;
+        .group-member {
+            list-style: none;
+            padding: 6px 10px;
             background: rgba(255, 255, 255, 0.2);
-            margin-bottom: 8px;
             border-radius: 6px;
-            backdrop-filter: blur(10px);
+            margin-bottom: 5px;
         }
 
-        .info-text {
-            color: #666;
+        /* ----- ZUFALLSAUSWAHL ----- */
+        .random-result {
+            background: #f0f8ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 25px;
             text-align: center;
-            margin: 20px 0;
+            margin-top: 20px;
+            display: none;
+            position: relative;
         }
 
-        .file-name {
-            margin-top: 15px;
-            color: #667eea;
-            font-weight: 600;
+        .random-result.show {
+            display: block;
         }
 
-        .stats-info {
-            background: #e8f5e9;
+        .random-clear-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #dc3545;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .random-clear-btn:hover {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        /* ----- TOAST (Benachrichtigung) ----- */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 350px;
+            transform: translateX(400px);
+            transition: transform 0.2s;
             border-left: 4px solid #28a745;
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 4px;
+            z-index: 1000;
         }
 
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #dc3545;
+        }
+
+        .toast.warning {
+            border-left-color: #e67e22;
+        }
+
+        /* ----- LADEANIMATION ----- */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ----- RESPONSIVE ----- */
         @media (max-width: 768px) {
             .container {
-                padding: 20px;
+                padding: 15px;
             }
 
             h1 {
@@ -389,7 +675,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .button-group {
+            .save-controls {
                 flex-direction: column;
             }
 
@@ -397,8 +683,13 @@
                 grid-template-columns: 1fr;
             }
 
-            .saved-lists {
-                grid-template-columns: 1fr;
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .person-actions {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -406,573 +697,274 @@
 
 <body>
     <div class="container">
-        <h1>📊 Gruppeneinteilung</h1>
+        <h1>📊 Gruppenverteiler</h1>
 
-        <!-- Upload Section -->
-        <div class="upload-section" id="uploadSection">
-            <p style="color: #666; margin-bottom: 15px;">Datei hochladen (Excel oder CSV)</p>
-            <div class="file-input-wrapper">
-                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
-                <label for="fileInput" class="file-input-label">
-                    📁 Datei auswählen
-                </label>
-            </div>
-            <div class="file-name" id="fileName"></div>
-        </div>
-
-        <!-- Save/Load Section -->
-        <div class="save-section">
-            <h2>💾 Listen verwalten</h2>
-            <div class="save-controls">
-                <input type="text" id="listName" placeholder="Name der Liste">
-                <button class="btn-save" onclick="saveCurrentList()">Liste speichern</button>
-            </div>
-            <div class="saved-lists" id="savedLists"></div>
-        </div>
-
-        <!-- Person List with Ignore Option -->
-        <div id="personListSection" style="display: none;">
-            <h2>👥 Personen (klicken zum Ignorieren)</h2>
-            <div class="stats-info" id="statsInfo" style="margin-bottom: 20px;"></div>
-            <div class="person-list" id="personList"></div>
-        </div>
-
-        <!-- Parse Settings Toggle -->
-        <div style="margin-bottom: 20px;">
-            <button class="btn-subtle" onclick="toggleParseSettings()" style="width: 100%;">
-                ⚙️ Parse-Einstellungen anzeigen
-            </button>
-        </div>
-
-        <!-- Controls (Parse Settings) -->
-        <div id="parseSettingsSection" class="controls" style="display: none;">
-            <div class="control-group">
-                <label for="nameColumn">Spalte: Vorname (0-basiert)</label>
-                <input type="number" id="nameColumn" value="0" min="0">
-            </div>
-
-            <div class="control-group">
-                <label for="lastNameColumn">Spalte: Nachname (-1 = keine)</label>
-                <input type="number" id="lastNameColumn" value="-1" min="-1">
-            </div>
-
-            <div class="control-group">
-                <label for="exclusionColumn">Spalte: Ausschlüsse (-1 = keine)</label>
-                <input type="number" id="exclusionColumn" value="1" min="-1">
-            </div>
-
-            <div class="control-group">
-                <label>
-                    <input type="checkbox" id="ignoreFirstRow" checked> Erste Zeile ignorieren (Überschrift)
-                </label>
-            </div>
-        </div>
-
-        <div class="controls">
-            <div class="control-group">
-                <label for="divisionMode">Aufteilungsmodus</label>
-                <select id="divisionMode">
-                    <option value="count">Anzahl Gruppen</option>
-                    <option value="size">Gruppengröße</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label for="groupValue">Wert</label>
-                <input type="number" id="groupValue" value="6" min="1">
-            </div>
-
-            <div class="control-group">
-                <label for="remainderMode">Rest-Modus (nur bei Gruppengröße)</label>
-                <select id="remainderMode">
-                    <option value="distribute">Verteilen</option>
-                    <option value="separate">Kleinere Gruppen</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="button-group">
-            <button class="btn-primary" id="divideBtn" onclick="divideIntoGroups()" disabled>
-                🎲 Gruppen einteilen
-            </button>
-            <button class="btn-secondary" id="exportBtn" onclick="exportToExcel()" disabled>
-                💾 Als Excel exportieren
-            </button>
-            <button class="btn-secondary" id="deleteGroupsBtn" onclick="deleteCurrentDistribution()" disabled
-                style="background: #dc3545;">
-                🗑️ Verteilung löschen
-            </button>
-        </div>
-
-        <div class="groups-container" id="groupsContainer"></div>
-
-        <!-- Random Selection Section -->
-        <div style="margin-top: 40px;">
-            <h2>🎯 Zufallsauswahl</h2>
-            <div class="button-group">
-                <button class="btn-primary" id="randomPersonBtn" onclick="selectRandomPerson()" disabled>
-                    👤 Zufällige Person
-                </button>
-                <button class="btn-secondary" id="randomGroupBtn" onclick="selectRandomGroup()" disabled>
-                    👥 Zufällige Gruppe
-                </button>
-            </div>
-
-            <div id="randomResultContainer" style="display: none;">
-                <div
-                    style="background: #f0f8ff; border: 2px solid #667eea; border-radius: 10px; padding: 30px; text-align: center; margin-top: 20px;">
-                    <div style="font-size: 1.2em; color: #666; margin-bottom: 15px; font-weight: 600;">Ergebnis:</div>
-                    <div id="randomResult"
-                        style="font-size: 2.5em; color: #667eea; font-weight: bold; min-height: 60px;"></div>
+        <!-- ========== BLOCK 1: OBERER BEREICH ========= -->
+        <div class="block">
+            <!-- Hilfe + Beispiel-Link -->
+            <div class="top-bar">
+                <div class="help-links">
+                    <a href="#" id="showQuickHelp" class="help-link">ℹ️ Schnellstart anzeigen</a>
+                    <a href="https://github.com/Joe91/gruppenverteiler" target="_blank" class="help-link">📖
+                        Anleitung</a>
                 </div>
+                <a href="#" id="downloadExample" class="example-link">📥 Beispiel-Datei</a>
+            </div>
+
+            <!-- Schnellstart-Hilfe -->
+            <div class="help-section" id="quickHelp">
+                <div class="help-title">🚀 Schnellstart</div>
+                <p style="font-size: 0.95rem; line-height: 1.5;">
+                    1. <strong>Datei hochladen</strong> (Excel/CSV, Vorname in Spalte A)<br>
+                    2. <strong>Personen prüfen</strong> – klicken zum Ignorieren<br>
+                    3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
+                    4. <strong>Gruppen einteilen</strong> und exportieren
+                </p>
+            </div>
+
+            <!-- Upload -->
+            <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">⬆️</span>
+                <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Datei ablegen oder klicken</div>
+                <div style="color: #666; font-size: 0.9rem;">Excel (.xlsx, .xls) oder CSV</div>
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+            </div>
+            <div id="filePreview" class="file-preview">
+                <strong>Geladen:</strong> <span id="fileName"></span>
+                <div style="margin-top: 4px;"><span id="fileStats"></span></div>
+            </div>
+
+            <!-- SPALTEN-EINSTELLUNGEN (Toggle) -->
+            <div style="margin-top: 25px;">
+                <div class="settings-toggle" id="settingsToggle">
+                    <span>⚙️ Spalten-Einstellungen (bei Bedarf anpassen)</span>
+                    <span id="toggleIcon">▼</span>
+                </div>
+                <div class="settings-content" id="settingsContent">
+                    <div class="controls" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 0;">
+                        <div class="control-group">
+                            <label for="colFirstName">Spalte Vorname (0 = A)</label>
+                            <input type="number" id="colFirstName" value="0" min="0">
+                            <span style="font-size: 0.8rem; color: #666;">Spalte A = 0, B = 1, …</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="colLastName">Spalte Nachname (-1 = keine)</label>
+                            <input type="number" id="colLastName" value="-1" min="-1">
+                            <span style="font-size: 0.8rem; color: #666;">-1 = keine Nachnamenspalte</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="colExclusions">Spalte Ausschlüsse (-1 = keine)</label>
+                            <input type="number" id="colExclusions" value="1" min="-1">
+                            <span style="font-size: 0.8rem; color: #666;">Komma-getrennt, z.B. "Anna, Peter"</span>
+                        </div>
+                        <div class="control-group" style="justify-content: flex-end;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="skipFirstRow" checked>
+                                <span>Erste Zeile ignorieren (Überschrift)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTENVERWALTUNG -->
+            <div id="listManagementCard" style="display: none; margin-top: 25px;">
+                <h2>💾 Listen verwalten</h2>
+                <div class="save-section">
+                    <div class="save-controls">
+                        <input type="text" id="listName" placeholder="Name für neue Liste">
+                        <button class="btn btn-success" id="saveListBtn">Speichern</button>
+                        <button class="btn btn-secondary" onclick="clearCurrentList()">Löschen</button>
+                    </div>
+                    <div id="savedListsContainer" class="saved-lists"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== BLOCK 2: PERSONENLISTE ========= -->
+        <div id="personListCard" style="display: none;" class="block">
+            <h2>👥 Personen (klicken zum Ignorieren)</h2>
+            <div class="person-list-section">
+                <div class="person-stats">
+                    <div class="stat-item"><span class="stat-value" id="totalCount">0</span>
+                        <div class="stat-label">Gesamt</div>
+                    </div>
+                    <div class="stat-item"><span class="stat-value" id="activeCount">0</span>
+                        <div class="stat-label">Aktiv</div>
+                    </div>
+                    <div class="stat-item"><span class="stat-value" id="ignoredCount">0</span>
+                        <div class="stat-label">Ignoriert</div>
+                    </div>
+                </div>
+                <!-- Verbesserte Button-Anordnung: einheitlich, nebeneinander -->
+                <div class="person-actions">
+                    <button class="btn btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
+                    <button class="btn btn-sm btn-secondary" id="toggleExclusionsBtn">👁️ <span
+                            id="exclusionsToggleText">Ausschlüsse anzeigen</span></button>
+                </div>
+                <div id="personList" class="person-grid"></div>
+            </div>
+        </div>
+
+        <!-- ========== BLOCK 3: AUFTEILUNGS-EINSTELLUNGEN ========= -->
+        <div id="distributionCard" style="display: none;" class="block">
+            <h2>⚙️ Aufteilung</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Modus</label>
+                    <div class="radio-group">
+                        <label class="radio-option"><input type="radio" name="mode" value="count" checked> Anzahl
+                            Gruppen</label>
+                        <label class="radio-option"><input type="radio" name="mode" value="size"> Gruppengröße</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label id="valueLabel">Anzahl Gruppen</label>
+                    <input type="number" id="distributionValue" value="3" min="1">
+                </div>
+            </div>
+            <div id="restModeGroup" style="display: none; margin-bottom: 20px;">
+                <label style="font-weight: 600;">Rest-Modus (bei Gruppengröße)</label>
+                <div class="radio-group" style="margin-top: 8px;">
+                    <label class="radio-option"><input type="radio" name="restMode" value="distribute" checked>
+                        Verteilen</label>
+                    <label class="radio-option"><input type="radio" name="restMode" value="separate"> Kleinere
+                        Gruppen</label>
+                </div>
+                <span class="form-hint" id="restModeHint" style="display: block; margin-top: 6px; color: #666;"></span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="distributeBtn">🎲 Gruppen einteilen</button>
+                <div class="progress-bar" id="distributionProgress" style="flex: 1; max-width: 200px;">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== BLOCK 4: GRUPPENEINTEILUNG ========= -->
+        <div id="groupsCard" style="display: none;" class="block">
+            <h2>🎯 Gruppeneinteilung</h2>
+            <div id="groupsContainer" class="groups-container"></div>
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button class="btn btn-success" id="exportBtn">💾 Als Excel exportieren</button>
+                <button class="btn btn-danger" id="clearGroupsBtn">🗑️ Verteilung löschen</button>
+            </div>
+        </div>
+
+        <!-- ========== BLOCK 5: ZUFALLSAUSWAHL ========= -->
+        <div id="randomCard" style="display: none;" class="block">
+            <h2>🎲 Zufallsauswahl</h2>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn btn-accent" id="randomPersonBtn">👤 Zufällige Person</button>
+                <button class="btn btn-accent" id="randomGroupBtn" disabled>👥 Zufällige Gruppe</button>
+            </div>
+            <div id="randomResult" class="random-result">
+                <div id="randomResultContent" style="font-size: 1.3em;"></div>
+                <button id="clearRandomBtn" class="random-clear-btn">✕</button>
             </div>
         </div>
     </div>
 
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <span id="toastIcon">✓</span>
+        <div id="toastMessage" class="toast-message"></div>
+    </div>
+
     <script>
-        let currentData = [];
-        let currentGroups = [];
-        let currentListName = null;
-        let ignoredPersons = new Set();
+        // =========================================================================
+        // VOLLSTÄNDIGE LOGIK (unverändert, nur an neue Button-Klassen angepasst)
+        // =========================================================================
 
+        // State
+        let people = [];
+        let groups = [];
+        let currentListName = '';
+        let firstNameCount = {};
+        let currentFileData = null;
+        let isLoadingList = false;
+        let showExclusions = false;
+
+        // LocalStorage keys
+        const STORAGE_KEYS = {
+            PEOPLE: 'gruppenverteiler_people',
+            GROUPS: 'gruppenverteiler_groups',
+            SETTINGS: 'gruppenverteiler_settings',
+            IGNORED: 'gruppenverteiler_ignored',
+            CURRENT_LIST: 'gruppenverteiler_currentList',
+            LAST_FILE: 'gruppenverteiler_lastFile'
+        };
+
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
-        const uploadSection = document.getElementById('uploadSection');
-        const divideBtn = document.getElementById('divideBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const groupsContainer = document.getElementById('groupsContainer');
-        const divisionMode = document.getElementById('divisionMode');
-        const groupValue = document.getElementById('groupValue');
-        const remainderMode = document.getElementById('remainderMode');
-        const nameColumn = document.getElementById('nameColumn');
-        const lastNameColumn = document.getElementById('lastNameColumn');
-        const exclusionColumn = document.getElementById('exclusionColumn');
-        const ignoreFirstRow = document.getElementById('ignoreFirstRow');
-        const personListSection = document.getElementById('personListSection');
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsContent = document.getElementById('settingsContent');
+        const personListCard = document.getElementById('personListCard');
         const personList = document.getElementById('personList');
-        const statsInfo = document.getElementById('statsInfo');
-        const listNameInput = document.getElementById('listName');
-        const savedListsContainer = document.getElementById('savedLists');
+        const distributionCard = document.getElementById('distributionCard');
+        const groupsCard = document.getElementById('groupsCard');
+        const randomCard = document.getElementById('randomCard');
+        const listManagementCard = document.getElementById('listManagementCard');
+        const quickHelp = document.getElementById('quickHelp');
+        const toggleExclusionsBtn = document.getElementById('toggleExclusionsBtn');
+        const exclusionsToggleText = document.getElementById('exclusionsToggleText');
 
-        // Load saved lists and settings on startup
-        loadCurrentSettings();
-        loadSavedLists();
-        restoreLastDistribution();
-
-        // File input handler
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                processFile(file);
-            }
-        });
-
-        // Drag and drop
-        uploadSection.addEventListener('dragover', (e) => {
+        // Toggle quick help
+        document.getElementById('showQuickHelp').addEventListener('click', (e) => {
             e.preventDefault();
-            uploadSection.classList.add('drag-over');
+            quickHelp.classList.toggle('show');
         });
 
-        uploadSection.addEventListener('dragleave', () => {
-            uploadSection.classList.remove('drag-over');
-        });
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMessage = document.getElementById('toastMessage');
 
-        uploadSection.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadSection.classList.remove('drag-over');
-
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                processFile(file);
-            }
-        });
-
-        function processFile(file) {
-            fileName.textContent = `📄 ${file.name}`;
-
-            // Reset list context when loading a new file
-            currentListName = null;
-            currentGroups = [];
-            groupsContainer.innerHTML = '';
-            exportBtn.disabled = true;
-            document.getElementById('deleteGroupsBtn').disabled = true;
-            document.getElementById('randomGroupBtn').disabled = true;
-
-            // Update saved lists UI to deselect any active list
-            loadSavedLists();
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                    currentData = jsonData.filter(row => row && row.length > 0);
-                    ignoredPersons.clear();
-
-                    if (currentData.length > 0) {
-                        divideBtn.disabled = false;
-                        document.getElementById('randomPersonBtn').disabled = false;
-                        displayPersonList();
-                    }
-                } catch (error) {
-                    alert('❌ Fehler beim Lesen der Datei: ' + error.message);
-                }
+            const icons = {
+                success: '✓',
+                error: '✗',
+                warning: '⚠',
+                info: 'ℹ'
             };
-            reader.readAsArrayBuffer(file);
+
+            toast.className = 'toast ' + type;
+            toastIcon.textContent = icons[type] || icons.success;
+            toastMessage.textContent = message;
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        function displayPersonList() {
-            const skipFirstRow = ignoreFirstRow.checked;
-            const firstNameColIndex = parseInt(nameColumn.value);
-            const lastNameColIndex = parseInt(lastNameColumn.value);
+        // Update file display
+        function updateFileDisplay() {
+            const filePreview = document.getElementById('filePreview');
+            const fileName = document.getElementById('fileName');
+            const fileStats = document.getElementById('fileStats');
 
-            let dataToShow = [...currentData];
-            if (skipFirstRow && dataToShow.length > 0) {
-                dataToShow = dataToShow.slice(1);
-            }
+            if (currentListName) {
+                filePreview.style.display = 'block';
+                const isTemp = currentListName.startsWith('[TEMP] ');
+                const listName = currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '');
+                const icon = isTemp ? '📝' : '💾';
+                const status = isTemp ? '(Temporär)' : '(Gespeichert)';
 
-            personList.innerHTML = '';
-            personListSection.style.display = 'block';
-
-            const persons = [];
-            dataToShow.forEach((row, index) => {
-                const firstName = row[firstNameColIndex];
-                const lastName = lastNameColIndex >= 0 ? row[lastNameColIndex] : '';
-
-                if (firstName && firstName.toString().trim() !== '') {
-                    const firstNameStr = firstName.toString().trim();
-                    const lastNameStr = lastName ? lastName.toString().trim() : '';
-                    const fullName = lastNameStr ? `${firstNameStr} ${lastNameStr}` : firstNameStr;
-
-                    persons.push({
-                        index: index,
-                        name: fullName,
-                        firstName: firstNameStr
-                    });
-                }
-            });
-
-            persons.forEach(person => {
-                const personDiv = document.createElement('div');
-                personDiv.className = 'person-item';
-                if (ignoredPersons.has(person.index)) {
-                    personDiv.classList.add('ignored');
-                }
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = ignoredPersons.has(person.index);
-                checkbox.onchange = () => toggleIgnorePerson(person.index, personDiv);
-
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'person-name';
-                nameSpan.textContent = person.name;
-
-                personDiv.appendChild(checkbox);
-                personDiv.appendChild(nameSpan);
-                personList.appendChild(personDiv);
-            });
-
-            updateStatsInfo(persons.length);
-        }
-
-        function toggleIgnorePerson(index, element) {
-            if (ignoredPersons.has(index)) {
-                ignoredPersons.delete(index);
-                element.classList.remove('ignored');
+                fileName.innerHTML = `${icon} <strong>${listName}</strong> ${status}`;
+                fileStats.textContent = `${people.length} Personen, ${groups.length} Gruppen`;
+            } else if (people.length > 0) {
+                filePreview.style.display = 'block';
+                fileName.textContent = `📄 ${currentFileData?.name || 'Hochgeladene Datei'}`;
+                fileStats.textContent = `${people.length} Personen geladen`;
             } else {
-                ignoredPersons.add(index);
-                element.classList.add('ignored');
-            }
-
-            const skipFirstRow = ignoreFirstRow.checked;
-            let totalPersons = currentData.length;
-            if (skipFirstRow && totalPersons > 0) {
-                totalPersons -= 1;
-            }
-            updateStatsInfo(totalPersons);
-        }
-
-        function updateStatsInfo(totalPersons) {
-            const activePersons = totalPersons - ignoredPersons.size;
-            let statsText = `📊 Gesamt: ${totalPersons} | Aktiv: ${activePersons}`;
-
-            statsInfo.innerHTML = '';
-            statsInfo.textContent = statsText + ' | Ignoriert: ' + ignoredPersons.size;
-
-            if (ignoredPersons.size > 0) {
-                const resetIcon = document.createElement('span');
-                resetIcon.textContent = ' 🔄';
-                resetIcon.style.cursor = 'pointer';
-                resetIcon.style.marginLeft = '8px';
-                resetIcon.style.fontSize = '1.3em';
-                resetIcon.title = 'Klicken zum Zurücksetzen';
-                resetIcon.onclick = resetIgnoredPersons;
-                statsInfo.appendChild(resetIcon);
+                filePreview.style.display = 'none';
             }
         }
 
-        function saveCurrentSettings() {
-            const settings = {
-                nameColumn: parseInt(nameColumn.value),
-                lastNameColumn: parseInt(lastNameColumn.value),
-                exclusionColumn: parseInt(exclusionColumn.value),
-                ignoreFirstRow: ignoreFirstRow.checked,
-                divisionMode: divisionMode.value,
-                groupValue: parseInt(groupValue.value),
-                remainderMode: remainderMode.value
-            };
-            localStorage.setItem('groupSettings', JSON.stringify(settings));
-        }
-
-        function loadCurrentSettings() {
-            const settings = JSON.parse(localStorage.getItem('groupSettings') || '{}');
-            if (settings.nameColumn !== undefined) nameColumn.value = settings.nameColumn;
-            if (settings.lastNameColumn !== undefined) lastNameColumn.value = settings.lastNameColumn;
-            if (settings.exclusionColumn !== undefined) exclusionColumn.value = settings.exclusionColumn;
-            if (settings.ignoreFirstRow !== undefined) ignoreFirstRow.checked = settings.ignoreFirstRow;
-            if (settings.divisionMode !== undefined) divisionMode.value = settings.divisionMode;
-            if (settings.groupValue !== undefined) groupValue.value = settings.groupValue;
-            if (settings.remainderMode !== undefined) remainderMode.value = settings.remainderMode;
-        }
-
-        function saveCurrentList() {
-            if (currentData.length === 0) {
-                alert('❌ Keine Daten zum Speichern vorhanden!');
-                return;
-            }
-
-            const listName = listNameInput.value.trim();
-            if (!listName) {
-                alert('❌ Bitte einen Namen für die Liste eingeben!');
-                return;
-            }
-
-            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
-
-            // Speichere aktuelle Einstellungen
-            saveCurrentSettings();
-
-            savedLists[listName] = {
-                data: currentData,
-                ignoredPersons: Array.from(ignoredPersons),
-                groups: currentGroups,
-                settings: {
-                    nameColumn: parseInt(nameColumn.value),
-                    lastNameColumn: parseInt(lastNameColumn.value),
-                    exclusionColumn: parseInt(exclusionColumn.value),
-                    ignoreFirstRow: ignoreFirstRow.checked,
-                    divisionMode: divisionMode.value,
-                    groupValue: parseInt(groupValue.value),
-                    remainderMode: remainderMode.value
-                },
-                timestamp: new Date().toISOString()
-            };
-
-            localStorage.setItem('groupLists', JSON.stringify(savedLists));
-            currentListName = listName;
-
-            loadSavedLists();
-            listNameInput.value = '';
-        }
-
-        function updateLoadedList() {
-            if (!currentListName || currentData.length === 0) {
-                return;
-            }
-
-            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
-
-            savedLists[currentListName] = {
-                data: currentData,
-                ignoredPersons: Array.from(ignoredPersons),
-                groups: currentGroups,
-                settings: {
-                    nameColumn: parseInt(nameColumn.value),
-                    lastNameColumn: parseInt(lastNameColumn.value),
-                    exclusionColumn: parseInt(exclusionColumn.value),
-                    ignoreFirstRow: ignoreFirstRow.checked,
-                    divisionMode: divisionMode.value,
-                    groupValue: parseInt(groupValue.value),
-                    remainderMode: remainderMode.value
-                },
-                timestamp: new Date().toISOString()
-            };
-
-            localStorage.setItem('groupLists', JSON.stringify(savedLists));
-            console.log(`✅ Liste "${currentListName}" automatisch aktualisiert`);
-        }
-
-        function saveLastDistribution() {
-            const lastDistribution = {
-                data: currentData,
-                ignoredPersons: Array.from(ignoredPersons),
-                groups: currentGroups,
-                settings: {
-                    nameColumn: parseInt(nameColumn.value),
-                    lastNameColumn: parseInt(lastNameColumn.value),
-                    exclusionColumn: parseInt(exclusionColumn.value),
-                    ignoreFirstRow: ignoreFirstRow.checked,
-                    divisionMode: divisionMode.value,
-                    groupValue: parseInt(groupValue.value),
-                    remainderMode: remainderMode.value
-                },
-                listName: currentListName,
-                timestamp: new Date().toISOString()
-            };
-            localStorage.setItem('lastDistribution', JSON.stringify(lastDistribution));
-        }
-
-        function restoreLastDistribution() {
-            const lastDistribution = JSON.parse(localStorage.getItem('lastDistribution') || '{}');
-
-            if (!lastDistribution.data || lastDistribution.data.length === 0) {
-                return;
-            }
-
-            currentData = lastDistribution.data;
-            ignoredPersons = new Set(lastDistribution.ignoredPersons || []);
-            currentGroups = lastDistribution.groups || [];
-            currentListName = lastDistribution.listName || null;
-
-            // Lade Einstellungen
-            if (lastDistribution.settings) {
-                nameColumn.value = lastDistribution.settings.nameColumn;
-                lastNameColumn.value = lastDistribution.settings.lastNameColumn;
-                exclusionColumn.value = lastDistribution.settings.exclusionColumn;
-                ignoreFirstRow.checked = lastDistribution.settings.ignoreFirstRow;
-                divisionMode.value = lastDistribution.settings.divisionMode;
-                groupValue.value = lastDistribution.settings.groupValue;
-                remainderMode.value = lastDistribution.settings.remainderMode;
-            }
-
-            // Zeige Daten
-            if (currentData.length > 0) {
-                divideBtn.disabled = false;
-                document.getElementById('randomPersonBtn').disabled = false;
-                displayPersonList();
-                fileName.textContent = `📄 ${lastDistribution.listName ? lastDistribution.listName + ' (gespeichert)' : 'Letzte Verteilung'}`;
-            }
-
-            // Zeige Gruppen wenn vorhanden
-            if (currentGroups.length > 0) {
-                displayGroups();
-                exportBtn.disabled = false;
-                document.getElementById('randomGroupBtn').disabled = false;
-            }
-
-            loadSavedLists();
-        }
-
-        function loadSavedLists() {
-            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
-            savedListsContainer.innerHTML = '';
-
-            if (Object.keys(savedLists).length === 0) {
-                savedListsContainer.innerHTML = '<p style="color: #999; text-align: center;">Keine gespeicherten Listen</p>';
-                return;
-            }
-
-            Object.entries(savedLists).forEach(([name, listData]) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'saved-list-item';
-                if (currentListName === name) {
-                    itemDiv.classList.add('active');
-                }
-
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'saved-list-name';
-                nameSpan.textContent = name;
-                nameSpan.onclick = () => loadList(name);
-
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'saved-list-actions';
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-small btn-delete';
-                deleteBtn.textContent = '🗑️';
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    deleteList(name);
-                };
-
-                actionsDiv.appendChild(deleteBtn);
-                itemDiv.appendChild(nameSpan);
-                itemDiv.appendChild(actionsDiv);
-                savedListsContainer.appendChild(itemDiv);
-            });
-        }
-
-        function loadList(name) {
-            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
-            const listData = savedLists[name];
-
-            if (!listData) {
-                return;
-            }
-
-            currentData = listData.data;
-            ignoredPersons = new Set(listData.ignoredPersons || []);
-            currentListName = name;
-
-            // Setze Gruppen zurück, bevor neue Liste geladen wird
-            currentGroups = [];
-            groupsContainer.innerHTML = '';
-            exportBtn.disabled = true;
-            document.getElementById('deleteGroupsBtn').disabled = true;
-            document.getElementById('randomGroupBtn').disabled = true;
-
-            // Lade gespeicherte Einstellungen
-            if (listData.settings) {
-                nameColumn.value = listData.settings.nameColumn;
-                lastNameColumn.value = listData.settings.lastNameColumn;
-                exclusionColumn.value = listData.settings.exclusionColumn;
-                ignoreFirstRow.checked = listData.settings.ignoreFirstRow;
-                divisionMode.value = listData.settings.divisionMode;
-                groupValue.value = listData.settings.groupValue;
-                remainderMode.value = listData.settings.remainderMode;
-            }
-
-            // Speichere Einstellungen global
-            saveCurrentSettings();
-
-            fileName.textContent = `📄 ${name} (gespeichert)`;
-            divideBtn.disabled = false;
-            document.getElementById('randomPersonBtn').disabled = false;
-            displayPersonList();
-
-            // Lade gespeicherte Verteilung, falls vorhanden
-            if (listData.groups && listData.groups.length > 0) {
-                currentGroups = listData.groups;
-                displayGroups();
-                exportBtn.disabled = false;
-                document.getElementById('randomGroupBtn').disabled = false;
-                document.getElementById('deleteGroupsBtn').disabled = false;
-            }
-
-            loadSavedLists();
-        }
-
-        function deleteList(name) {
-            if (!confirm(`Liste "${name}" wirklich löschen?`)) {
-                return;
-            }
-
-            const savedLists = JSON.parse(localStorage.getItem('groupLists') || '{}');
-            delete savedLists[name];
-            localStorage.setItem('groupLists', JSON.stringify(savedLists));
-
-            if (currentListName === name) {
-                currentListName = null;
-            }
-
-            loadSavedLists();
-        }
-
-        // Fisher-Yates Shuffle (gleichmäßige Verteilung)
+        // Fisher-Yates Shuffle
         function shuffle(array) {
             const shuffled = [...array];
             for (let i = shuffled.length - 1; i > 0; i--) {
@@ -982,7 +974,19 @@
             return shuffled;
         }
 
-        // Zähle Konflikte in einer Gruppe
+        // Check exclusion
+        function checkExclusion(person, member, firstNameCount) {
+            return person.exclusions.some(exclusion => {
+                const exc = exclusion.trim();
+                if (exc === member.displayName) return true;
+                if (exc === member.firstName && firstNameCount[member.firstName] === 1) return true;
+                if (member.lastName && exc === `${member.firstName} ${member.lastName}`) return true;
+                if (member.lastName && exc === `${member.firstName} ${member.lastName.substring(0, 3)}.`) return true;
+                return false;
+            });
+        }
+
+        // Count conflicts in a group
         function countConflicts(group, person, firstNameCount) {
             return group.filter(member =>
                 checkExclusion(person, member, firstNameCount) ||
@@ -990,7 +994,16 @@
             ).length;
         }
 
-        // Finde beste Gruppe für Person
+        // Calculate total conflicts
+        function calculateTotalConflicts(groups, firstNameCount) {
+            return groups.reduce((sum, group) => {
+                return sum + group.reduce((groupSum, person) =>
+                    groupSum + countConflicts(group, person, firstNameCount), 0
+                );
+            }, 0) / 2;
+        }
+
+        // Find best group for a person
         function findBestGroup(groups, person, mode, remainder, targetGroupSize, firstNameCount) {
             const groupSizes = groups.map(g => g.length);
             const minSize = Math.min(...groupSizes);
@@ -999,7 +1012,6 @@
                 .map((size, idx) => size === minSize ? idx : -1)
                 .filter(idx => idx !== -1);
 
-            // Enforce target size for 'size' mode
             if (mode === 'size' && remainder === 'separate' && targetGroupSize) {
                 candidateIndices = candidateIndices.filter(idx => {
                     const isRemainderGroup = idx === groups.length - 1;
@@ -1010,7 +1022,6 @@
                 }
             }
 
-            // Finde Gruppe mit wenigsten Konflikten
             let bestIndex = null;
             let minConflicts = Infinity;
 
@@ -1025,93 +1036,14 @@
             return { index: bestIndex, conflicts: minConflicts };
         }
 
-        // Berechne Gesamtkonflikte einer Gruppenlösung
-        function calculateTotalConflicts(groups, firstNameCount) {
-            return groups.reduce((sum, group) => {
-                return sum + group.reduce((groupSum, person) =>
-                    groupSum + countConflicts(group, person, firstNameCount), 0
-                );
-            }, 0) / 2; // Durch 2, weil jeder Konflikt doppelt gezählt wird
-        }
-
-        // Hauptalgorithmus mit Backtracking
-        function assignGroupsWithBacktracking(
-            persons,
-            numGroups,
-            mode,
-            remainder,
-            targetGroupSize,
-            firstNameCount,
-            maxAttempts = 10
-        ) {
-            let bestSolution = null;
-            let minTotalConflicts = Infinity;
-            let attemptResults = [];
-
-            // Probiere mehrere Durchläufe mit unterschiedlichen Shuffles
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                const groups = Array.from({ length: numGroups }, () => []);
-                const shuffled = shuffle(persons);
-
-                // Weise Personen zu
-                for (const person of shuffled) {
-                    const { index } = findBestGroup(
-                        groups,
-                        person,
-                        mode,
-                        remainder,
-                        targetGroupSize,
-                        firstNameCount
-                    );
-                    groups[index].push(person);
-                }
-
-                // Zähle Gesamtkonflikte
-                const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
-
-                attemptResults.push({
-                    attempt: attempt + 1,
-                    conflicts: totalConflicts
-                });
-
-                // Speichere beste Lösung
-                if (totalConflicts < minTotalConflicts) {
-                    minTotalConflicts = totalConflicts;
-                    bestSolution = groups.map(g => [...g]);
-                }
-
-                // Perfekte Lösung gefunden - abbrechen
-                if (totalConflicts === 0) {
-                    console.log(`✓ Perfekte Lösung ohne Konflikte gefunden (Versuch ${attempt + 1}/${maxAttempts})`);
-                    break;
-                }
-            }
-
-            // Logging für Debugging
-            console.log('Backtracking-Ergebnisse:', attemptResults);
-            console.log(`Beste Lösung: ${minTotalConflicts} Konflikt(e)`);
-
-            return {
-                groups: bestSolution,
-                totalConflicts: minTotalConflicts,
-                attempts: attemptResults
-            };
-        }
-
-        // Adaptive Backtracking-Strategie
-        function assignGroupsAdaptive(
-            persons,
-            numGroups,
-            mode,
-            remainder,
-            targetGroupSize,
-            firstNameCount
-        ) {
+        // Adaptive backtracking algorithm
+        function assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, onProgress = null) {
             const startTime = performance.now();
-            const maxTime = 700; // Maximale Zeit in ms (0,7 Sekunden)
-            const minAttempts = 5;
+            const maxTime = 700;
+            const minAttempts = 3;
             const maxAttempts = 1000;
-            const maxNoImprovement = 700;
+            const maxNoImprovement = 800;
+            const prioritizeNoConflicts = false;
 
             let bestSolution = null;
             let minTotalConflicts = Infinity;
@@ -1121,9 +1053,12 @@
             while (attempt < maxAttempts) {
                 attempt++;
 
-                // Zeitlimit prüfen
+                if (onProgress) {
+                    onProgress(Math.min(100, (attempt / maxAttempts) * 100));
+                }
+
                 if (attempt > minAttempts && performance.now() - startTime > maxTime) {
-                    console.log(`Zeit-Limit erreicht nach ${attempt} Versuchen`);
+                    console.log(`Time limit reached after ${attempt} attempts`);
                     break;
                 }
 
@@ -1139,34 +1074,38 @@
                         targetGroupSize,
                         firstNameCount
                     );
-                    groups[index].push(person);
+                    if (index !== null) {
+                        groups[index].push(person);
+                    } else {
+                        groups[0].push(person);
+                    }
                 }
 
                 const totalConflicts = calculateTotalConflicts(groups, firstNameCount);
 
-                if (totalConflicts < minTotalConflicts) {
+                const solutionValue = prioritizeNoConflicts && totalConflicts === 0 ? -1 : totalConflicts;
+
+                if (solutionValue < minTotalConflicts) {
                     minTotalConflicts = totalConflicts;
                     bestSolution = groups.map(g => [...g]);
                     noImprovementCount = 0;
 
-                    // Perfekte Lösung - sofort beenden
-                    if (totalConflicts === 0) {
-                        console.log(`✓ Perfekte Lösung gefunden (Versuch ${attempt})`);
+                    if (totalConflicts === 0 && prioritizeNoConflicts) {
+                        console.log(`✓ Perfect solution found (attempt ${attempt})`);
                         break;
                     }
                 } else {
                     noImprovementCount++;
                 }
 
-                // Abbrechen wenn keine Verbesserung mehr
                 if (noImprovementCount >= maxNoImprovement && attempt >= minAttempts) {
-                    console.log(`Keine Verbesserung nach ${noImprovementCount} Versuchen`);
+                    console.log(`No improvement after ${noImprovementCount} attempts`);
                     break;
                 }
             }
 
             const duration = performance.now() - startTime;
-            console.log(`Backtracking abgeschlossen: ${attempt} Versuche in ${duration.toFixed(0)}ms`);
+            console.log(`Backtracking completed: ${attempt} attempts in ${duration.toFixed(0)}ms`);
 
             return {
                 groups: bestSolution,
@@ -1176,66 +1115,312 @@
             };
         }
 
-        function divideIntoGroups() {
-            if (currentData.length === 0) {
-                alert('Bitte zuerst eine Datei laden!');
-                return;
+        // Toggle exclusions display
+        function toggleExclusionsDisplay() {
+            showExclusions = !showExclusions;
+            if (exclusionsToggleText) {
+                exclusionsToggleText.textContent = showExclusions ? 'Ausschlüsse ausblenden' : 'Ausschlüsse anzeigen';
             }
+            renderPersonList();
+        }
 
-            const mode = divisionMode.value;
-            const value = parseInt(groupValue.value);
-            const remainder = remainderMode.value;
-            const firstNameColIndex = parseInt(nameColumn.value);
-            const lastNameColIndex = parseInt(lastNameColumn.value);
-            const exclusionColIndex = parseInt(exclusionColumn.value);
-            const skipFirstRow = ignoreFirstRow.checked;
+        if (toggleExclusionsBtn) {
+            toggleExclusionsBtn.addEventListener('click', toggleExclusionsDisplay);
+        }
 
-            // Prepare data
-            let dataToProcess = [...currentData];
-            if (skipFirstRow && dataToProcess.length > 0) {
-                dataToProcess = dataToProcess.slice(1);
-            }
-
-            // Extract person data
-            const persons = [];
-            const firstNameCount = {};
-
-            dataToProcess.forEach((row, index) => {
-                // Skip ignored persons
-                if (ignoredPersons.has(index)) {
-                    return;
+        // Save state to localStorage
+        function saveState() {
+            try {
+                if (currentListName) {
+                    localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
                 }
 
-                const firstName = row[firstNameColIndex];
-                const lastName = lastNameColIndex >= 0 ? row[lastNameColIndex] : '';
-                const exclusionRaw = exclusionColIndex >= 0 ? row[exclusionColIndex] : '';
+                if (currentListName) {
+                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
-                if (firstName && firstName.toString().trim() !== '') {
-                    const firstNameStr = firstName.toString().trim();
-                    const lastNameStr = lastName ? lastName.toString().trim() : '';
+                    if (currentListName.startsWith('[TEMP] ')) {
+                        lists[currentListName] = {
+                            people: people,
+                            groups: groups,
+                            settings: {
+                                colFirstName: document.getElementById('colFirstName').value,
+                                colLastName: document.getElementById('colLastName').value,
+                                colExclusions: document.getElementById('colExclusions').value,
+                                skipFirstRow: document.getElementById('skipFirstRow').checked,
+                                mode: document.querySelector('input[name="mode"]:checked').value,
+                                distributionValue: document.getElementById('distributionValue').value,
+                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                            },
+                            timestamp: new Date().toISOString(),
+                            isTemp: true
+                        };
+                    } else if (currentListName.startsWith('[SAVED] ')) {
+                        lists[currentListName] = {
+                            people: people,
+                            groups: groups,
+                            settings: {
+                                colFirstName: document.getElementById('colFirstName').value,
+                                colLastName: document.getElementById('colLastName').value,
+                                colExclusions: document.getElementById('colExclusions').value,
+                                skipFirstRow: document.getElementById('skipFirstRow').checked,
+                                mode: document.querySelector('input[name="mode"]:checked').value,
+                                distributionValue: document.getElementById('distributionValue').value,
+                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                            },
+                            timestamp: new Date().toISOString(),
+                            isTemp: false
+                        };
+                    }
 
-                    firstNameCount[firstNameStr] = (firstNameCount[firstNameStr] || 0) + 1;
-
-                    const exclusions = exclusionRaw
-                        ? exclusionRaw.toString().split(',').map(e => e.trim()).filter(e => e)
-                        : [];
-
-                    persons.push({
-                        firstName: firstNameStr,
-                        lastName: lastNameStr,
-                        exclusions: exclusions,
-                        index: index
-                    });
+                    localStorage.setItem('savedLists', JSON.stringify(lists));
                 }
+
+                const settings = {
+                    colFirstName: document.getElementById('colFirstName').value,
+                    colLastName: document.getElementById('colLastName').value,
+                    colExclusions: document.getElementById('colExclusions').value,
+                    skipFirstRow: document.getElementById('skipFirstRow').checked,
+                    mode: document.querySelector('input[name="mode"]:checked').value,
+                    distributionValue: document.getElementById('distributionValue').value,
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                };
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+
+            } catch (e) {
+                console.error('Error saving state:', e);
+            }
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                const savedListName = localStorage.getItem(STORAGE_KEYS.CURRENT_LIST);
+
+                if (savedListName) {
+                    const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+                    if (lists[savedListName]) {
+                        loadList(savedListName, true);
+                        return;
+                    } else {
+                        console.log(`Gespeicherte Liste "${savedListName}" wurde nicht gefunden`);
+                        localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
+                    }
+                }
+
+                const savedPeople = localStorage.getItem(STORAGE_KEYS.PEOPLE);
+                if (savedPeople) {
+                    people = JSON.parse(savedPeople);
+                    if (people.length > 0) {
+                        currentListName = '[TEMP] Letzte Änderungen';
+                        firstNameCount = {};
+                        people.forEach(person => {
+                            firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
+                        });
+
+                        people.forEach(person => {
+                            if (firstNameCount[person.firstName] > 1 && person.lastName) {
+                                const lastNamePart = person.lastName.substring(0, 3);
+                                person.displayName = `${person.firstName} ${lastNamePart}.`;
+                            } else {
+                                person.displayName = person.firstName;
+                            }
+                        });
+
+                        renderPersonList();
+                        personListCard.style.display = 'block';
+                        distributionCard.style.display = 'block';
+                        randomCard.style.display = 'block';
+                        listManagementCard.style.display = 'block';
+                        updateFileDisplay();
+                    }
+                }
+
+                const savedGroups = localStorage.getItem(STORAGE_KEYS.GROUPS);
+                if (savedGroups) {
+                    groups = JSON.parse(savedGroups);
+                    if (groups.length > 0) {
+                        renderGroups();
+                        groupsCard.style.display = 'block';
+                        document.getElementById('randomGroupBtn').disabled = false;
+                    }
+                }
+
+                const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    document.getElementById('colFirstName').value = settings.colFirstName || 0;
+                    document.getElementById('colLastName').value = settings.colLastName || -1;
+                    document.getElementById('colExclusions').value = settings.colExclusions || 1;
+                    document.getElementById('skipFirstRow').checked = settings.skipFirstRow !== false;
+
+                    if (settings.mode) {
+                        document.querySelector(`input[name="mode"][value="${settings.mode}"]`).checked = true;
+                        const isSize = settings.mode === 'size';
+                        document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                        document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                    }
+
+                    if (settings.distributionValue) {
+                        document.getElementById('distributionValue').value = settings.distributionValue;
+                    }
+
+                    if (settings.restMode) {
+                        document.querySelector(`input[name="restMode"][value="${settings.restMode}"]`).checked = true;
+                    }
+                }
+
+                loadSavedLists();
+
+            } catch (e) {
+                console.error('Error loading state:', e);
+            }
+        }
+
+        // Upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Settings toggle
+        settingsToggle.addEventListener('click', () => {
+            const isOpen = settingsContent.classList.contains('show');
+            settingsContent.classList.toggle('show');
+            settingsToggle.classList.toggle('active');
+            document.getElementById('toggleIcon').textContent = isOpen ? '▼' : '▲';
+        });
+
+        // Mode change
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isSize = e.target.value === 'size';
+                document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                updateRestModeHint();
+                saveState();
             });
+        });
 
-            if (persons.length === 0) {
-                alert('Keine aktiven Personen gefunden!');
-                return;
+        document.querySelectorAll('input[name="restMode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateRestModeHint();
+                saveState();
+            });
+        });
+
+        // Save settings on change
+        document.getElementById('colFirstName').addEventListener('change', saveState);
+        document.getElementById('colLastName').addEventListener('change', saveState);
+        document.getElementById('colExclusions').addEventListener('change', saveState);
+        document.getElementById('skipFirstRow').addEventListener('change', saveState);
+        document.getElementById('distributionValue').addEventListener('change', () => {
+            updateRestModeHint();
+            saveState();
+        });
+
+        function updateRestModeHint() {
+            const activeCount = people.filter(p => !p.ignored).length;
+            const size = parseInt(document.getElementById('distributionValue').value) || 1;
+            const restMode = document.querySelector('input[name="restMode"]:checked').value;
+            const hint = document.getElementById('restModeHint');
+
+            if (activeCount && size) {
+                const numGroups = Math.floor(activeCount / size);
+                const rest = activeCount % size;
+
+                if (rest === 0) {
+                    hint.textContent = `${activeCount} Personen → ${numGroups} Gruppen (${size} Personen)`;
+                } else if (restMode === 'distribute') {
+                    hint.textContent = `${activeCount} Personen → ${numGroups} Gruppen (${rest} zusätzliche Personen verteilt)`;
+                } else {
+                    hint.textContent = `${activeCount} Personen → ${numGroups + 1} Gruppen (${size} Personen oder ${size - 1} Personen)`;
+                }
+            }
+        }
+
+        // Handle file upload
+        function handleFile(file) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    currentFileData = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        lastModified: file.lastModified
+                    };
+
+                    parseData(rows);
+
+                    showToast('Datei erfolgreich geladen!');
+                } catch (error) {
+                    showToast('Fehler beim Laden der Datei: ' + error.message, 'error');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Parse data
+        function parseData(rows) {
+            const colFirst = parseInt(document.getElementById('colFirstName').value);
+            const colLast = parseInt(document.getElementById('colLastName').value);
+            const colExcl = parseInt(document.getElementById('colExclusions').value);
+            const skipFirst = document.getElementById('skipFirstRow').checked;
+
+            people = [];
+            groups = [];
+            firstNameCount = {};
+            const startRow = skipFirst ? 1 : 0;
+
+            for (let i = startRow; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row[colFirst]) continue;
+
+                const firstName = row[colFirst].toString().trim();
+                const lastName = colLast >= 0 && row[colLast] ? row[colLast].toString().trim() : '';
+                const exclusions = colExcl >= 0 && row[colExcl] ?
+                    row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e) : [];
+
+                firstNameCount[firstName] = (firstNameCount[firstName] || 0) + 1;
+
+                people.push({
+                    firstName,
+                    lastName,
+                    exclusions,
+                    ignored: false,
+                    originalIndex: i - startRow
+                });
             }
 
-            // Create display names
-            persons.forEach(person => {
+            people.forEach(person => {
                 if (firstNameCount[person.firstName] > 1 && person.lastName) {
                     const lastNamePart = person.lastName.substring(0, 3);
                     person.displayName = `${person.firstName} ${lastNamePart}.`;
@@ -1244,259 +1429,584 @@
                 }
             });
 
-            // Calculate number of groups
+            const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            const fileName = currentFileData?.name || 'Neue Liste';
+            const baseName = fileName.replace(/\.[^/.]+$/, "");
+            currentListName = `[TEMP] ${baseName} (${timestamp})`;
+
+            renderPersonList();
+            personListCard.style.display = 'block';
+            distributionCard.style.display = 'block';
+            randomCard.style.display = 'block';
+            listManagementCard.style.display = 'block';
+            groupsCard.style.display = 'none';
+            updateStats();
+            updateFileDisplay();
+
+            autoSaveAsTempList();
+            loadSavedLists();
+        }
+
+        // Automatisch als temporäre Liste speichern
+        function autoSaveAsTempList() {
+            if (!currentListName || currentListName.startsWith('[SAVED] ')) return;
+
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+
+            const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
+            if (lists[savedVersionName]) {
+                currentListName = savedVersionName;
+                lists[currentListName] = {
+                    people: people,
+                    groups: groups,
+                    settings: {
+                        colFirstName: document.getElementById('colFirstName').value,
+                        colLastName: document.getElementById('colLastName').value,
+                        colExclusions: document.getElementById('colExclusions').value,
+                        skipFirstRow: document.getElementById('skipFirstRow').checked,
+                        mode: document.querySelector('input[name="mode"]:checked').value,
+                        distributionValue: document.getElementById('distributionValue').value,
+                        restMode: document.querySelector('input[name="restMode"]:checked').value
+                    },
+                    timestamp: new Date().toISOString(),
+                    isTemp: false
+                };
+            } else {
+                lists[currentListName] = {
+                    people: people,
+                    groups: groups,
+                    settings: {
+                        colFirstName: document.getElementById('colFirstName').value,
+                        colLastName: document.getElementById('colLastName').value,
+                        colExclusions: document.getElementById('colExclusions').value,
+                        skipFirstRow: document.getElementById('skipFirstRow').checked,
+                        mode: document.querySelector('input[name="mode"]:checked').value,
+                        distributionValue: document.getElementById('distributionValue').value,
+                        restMode: document.querySelector('input[name="restMode"]:checked').value
+                    },
+                    timestamp: new Date().toISOString(),
+                    isTemp: true
+                };
+            }
+
+            localStorage.setItem('savedLists', JSON.stringify(lists));
+            localStorage.setItem('currentListName', currentListName);
+        }
+
+        // Render person list
+        function renderPersonList() {
+            personList.innerHTML = people.map((person, index) => {
+                let exclusionInfo = '';
+                if (showExclusions && person.exclusions && person.exclusions.length > 0) {
+                    exclusionInfo = `<span class="exclusions-info show">(schließt aus: ${person.exclusions.join(', ')})</span>`;
+                }
+
+                return `
+                    <div class="person-item ${person.ignored ? 'ignored' : ''}" data-index="${index}">
+                        <input type="checkbox" class="person-checkbox" 
+                               ${person.ignored ? 'checked' : ''} 
+                               onchange="togglePerson(${index})">
+                        <span>${person.displayName}${exclusionInfo}</span>
+                    </div>
+                `;
+            }).join('');
+
+            updateStats();
+        }
+
+        // Toggle person
+        function togglePerson(index) {
+            people[index].ignored = !people[index].ignored;
+            renderPersonList();
+            updateRestModeHint();
+            saveState();
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = people.length;
+            const ignored = people.filter(p => p.ignored).length;
+            const active = total - ignored;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('activeCount').textContent = active;
+            document.getElementById('ignoredCount').textContent = ignored;
+        }
+
+        // Reset ignore list
+        document.getElementById('resetIgnoreBtn').addEventListener('click', () => {
+            people.forEach(p => p.ignored = false);
+            renderPersonList();
+            updateRestModeHint();
+            saveState();
+            showToast('Alle Personen wurden aktiviert');
+        });
+
+        // Distribute groups with advanced algorithm
+        document.getElementById('distributeBtn').addEventListener('click', async () => {
+            const activePeople = people.filter(p => !p.ignored);
+
+            if (activePeople.length === 0) {
+                showToast('Keine aktiven Personen zum Verteilen!', 'warning');
+                return;
+            }
+
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const value = parseInt(document.getElementById('distributionValue').value);
+            const remainderMode = document.querySelector('input[name="restMode"]:checked').value;
+
+            const personsForDistribution = activePeople.map((person, index) => ({
+                ...person,
+                index: index
+            }));
+
             let numGroups;
             let targetGroupSize = null;
 
             if (mode === 'count') {
-                numGroups = Math.min(value, persons.length);
+                numGroups = Math.min(value, personsForDistribution.length);
             } else {
                 targetGroupSize = value;
-                numGroups = Math.floor(persons.length / targetGroupSize);
-                const remainderCount = persons.length % targetGroupSize;
+                numGroups = Math.floor(personsForDistribution.length / targetGroupSize);
+                const remainderCount = personsForDistribution.length % targetGroupSize;
 
-                if (remainder === 'separate' && remainderCount > 0) {
+                if (remainderMode === 'separate' && remainderCount > 0) {
                     numGroups += 1;
                 }
 
                 if (numGroups === 0) numGroups = 1;
             }
 
-            // Hauptalgorithmus
-            <!-- const result = assignGroupsWithBacktracking(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount, 20); -->
-            const result = assignGroupsAdaptive(persons, numGroups, mode, remainder, targetGroupSize, firstNameCount);
+            const progressBar = document.getElementById('distributionProgress');
+            const progressFill = progressBar.querySelector('.progress-fill');
+            progressBar.style.display = 'block';
 
-            currentGroups = result.groups;
+            const distributeBtn = document.getElementById('distributeBtn');
+            const originalText = distributeBtn.innerHTML;
+            distributeBtn.innerHTML = '<span class="loading"></span> Berechne...';
+            distributeBtn.disabled = true;
 
-            document.getElementById('randomGroupBtn').disabled = false;
-            document.getElementById('deleteGroupsBtn').disabled = false;
-            displayGroups();
-            exportBtn.disabled = false;
+            const result = await new Promise(resolve => {
+                setTimeout(() => {
+                    const result = assignGroupsAdaptive(
+                        personsForDistribution,
+                        numGroups,
+                        mode,
+                        remainderMode,
+                        targetGroupSize,
+                        firstNameCount,
+                        (progress) => {
+                            progressFill.style.width = `${progress}%`;
+                        }
+                    );
+                    resolve(result);
+                }, 100);
+            });
 
-            // Speichere automatisch aktuelle Verteilung
-            saveCurrentSettings();
+            groups = result.groups || [];
 
-            // Speichere die letzte Verteilung
-            saveLastDistribution();
+            setTimeout(() => {
+                progressFill.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 300);
+            }, 500);
 
-            // Wenn Liste geladen ist, aktualisiere diese direkt
-            if (currentListName) {
-                updateLoadedList();
-            }
+            distributeBtn.innerHTML = originalText;
+            distributeBtn.disabled = false;
 
             if (result.totalConflicts > 0) {
-                console.warn(`⚠ Gruppeneinteilung enthält ${result.totalConflicts} Konflikt(e)`);
-
-                // Zeige Details pro Gruppe
-                currentGroups.forEach((group, idx) => {
-                    const groupConflicts = group.reduce((sum, person) =>
-                        sum + countConflicts(group, person, firstNameCount), 0
-                    ) / 2;
-
-                    if (groupConflicts > 0) {
-                        console.warn(`  Gruppe ${idx + 1}: ${groupConflicts} Konflikt(e)`);
-
-                        // Zeige welche Personen betroffen sind
-                        group.forEach(person => {
-                            const conflicts = countConflicts(group, person, firstNameCount);
-                            if (conflicts > 0) {
-                                console.warn(`    - ${person.displayName}: ${conflicts} Ausschluss-Konflikt(e)`);
-                            }
-                        });
-                    }
-                });
+                showToast(`Gruppen eingeteilt (${result.totalConflicts} Konflikt(e) gefunden)`, 'warning');
             } else {
-                console.log('✓ Alle Ausschlüsse wurden erfolgreich berücksichtigt!');
+                showToast('Gruppen erfolgreich eingeteilt!');
             }
+
+            renderGroups();
+            groupsCard.style.display = 'block';
+            document.getElementById('randomGroupBtn').disabled = false;
+            saveState();
+        });
+
+        // Render groups
+        function renderGroups() {
+            const container = document.getElementById('groupsContainer');
+            container.innerHTML = groups.map((group, index) => {
+                const members = group.map(p => {
+                    return `<li class="group-member">${p.displayName}</li>`;
+                }).join('');
+
+                return `
+                    <div class="group">
+                        <div class="group-header">Gruppe ${index + 1} (${group.length} Personen)</div>
+                        <ul class="group-members">
+                            ${members}
+                        </ul>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function checkExclusion(person, member, firstNameCount) {
-            return person.exclusions.some(exclusion => {
-                const exc = exclusion.trim();
-                if (exc === member.displayName) return true;
-                if (exc === member.firstName && firstNameCount[member.firstName] === 1) return true;
-                if (member.lastName && exc === `${member.firstName} ${member.lastName}`) return true;
-                if (member.lastName && exc === `${member.firstName} ${member.lastName.substring(0, 3)}.`) return true;
-                return false;
-            });
-        }
-
-        function displayGroups() {
-            groupsContainer.innerHTML = '';
-
-            currentGroups.forEach((group, index) => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'group';
-
-                const header = document.createElement('div');
-                header.className = 'group-header';
-                header.textContent = `Gruppe ${index + 1} (${group.length} Personen)`;
-
-                const membersList = document.createElement('ul');
-                membersList.className = 'group-members';
-
-                group.forEach(person => {
-                    const li = document.createElement('li');
-                    li.textContent = person.displayName;
-                    membersList.appendChild(li);
-                });
-
-                groupDiv.appendChild(header);
-                groupDiv.appendChild(membersList);
-                groupsContainer.appendChild(groupDiv);
-            });
-        }
-
-        function exportToExcel() {
-            if (currentGroups.length === 0) {
-                alert('Bitte zuerst Gruppen einteilen!');
+        // Export to Excel
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if (groups.length === 0) {
+                showToast('Bitte zuerst Gruppen einteilen!', 'warning');
                 return;
             }
 
-            const exportData = [];
-            const headers = currentGroups.map((_, i) => `Gruppe ${i + 1}`);
-            exportData.push(headers);
+            const ws_data = [];
+            const maxLength = Math.max(...groups.map(g => g.length));
 
-            const maxSize = Math.max(...currentGroups.map(g => g.length));
+            ws_data.push(groups.map((_, i) => `Gruppe ${i + 1}`));
 
-            for (let i = 0; i < maxSize; i++) {
-                const row = currentGroups.map(group => group[i] ? group[i].displayName : '');
-                exportData.push(row);
+            for (let i = 0; i < maxLength; i++) {
+                ws_data.push(groups.map(g => {
+                    if (g[i]) {
+                        return g[i].displayName;
+                    }
+                    return '';
+                }));
             }
 
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(exportData);
-            ws['!cols'] = headers.map(() => ({ wch: 20 }));
+            XLSX.utils.book_append_sheet(wb, ws, "Gruppen");
 
-            XLSX.utils.book_append_sheet(wb, ws, 'Gruppen');
-
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            const listNameSuffix = currentListName ? `_${currentListName}` : '';
-            const filename = `Gruppeneinteilung${listNameSuffix}_${timestamp}.xlsx`;
+            const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+            const filename = currentListName ?
+                `Gruppeneinteilung_${currentListName}_${timestamp}.xlsx` :
+                `Gruppeneinteilung_${timestamp}.xlsx`;
 
             XLSX.writeFile(wb, filename);
-        }
-
-        // Update person list when settings change
-        nameColumn.addEventListener('change', () => {
-            if (currentData.length > 0) displayPersonList();
-        });
-        lastNameColumn.addEventListener('change', () => {
-            if (currentData.length > 0) displayPersonList();
-        });
-        ignoreFirstRow.addEventListener('change', () => {
-            if (currentData.length > 0) displayPersonList();
+            showToast('Excel-Datei wurde heruntergeladen!');
         });
 
-        // Toggle parse settings visibility
-        function toggleParseSettings() {
-            const section = document.getElementById('parseSettingsSection');
-            const btn = event.target;
-            if (section.style.display === 'none') {
-                section.style.display = 'grid';
-                btn.textContent = '⚙️ Parse-Einstellungen ausblenden';
-            } else {
-                section.style.display = 'none';
-                btn.textContent = '⚙️ Parse-Einstellungen anzeigen';
+        // Clear groups
+        document.getElementById('clearGroupsBtn').addEventListener('click', () => {
+            if (confirm('Möchten Sie die Gruppeneinteilung wirklich löschen?')) {
+                groups = [];
+                groupsCard.style.display = 'none';
+                document.getElementById('randomGroupBtn').disabled = true;
+                saveState();
+                showToast('Gruppeneinteilung gelöscht');
             }
-        }
+        });
 
-        // Reset ignored persons
-        function resetIgnoredPersons() {
-            if (ignoredPersons.size === 0) {
+        // Random person
+        document.getElementById('randomPersonBtn').addEventListener('click', () => {
+            const activePeople = people.filter(p => !p.ignored);
+            if (activePeople.length === 0) {
+                showToast('Keine aktiven Personen!', 'warning');
                 return;
             }
-            ignoredPersons.clear();
-            displayPersonList();
 
-            // Speichere den geänderten Zustand
-            saveLastDistribution();
-            if (currentListName) {
-                updateLoadedList();
+            const randomPerson = activePeople[Math.floor(Math.random() * activePeople.length)];
+
+            const result = document.getElementById('randomResult');
+            const content = document.getElementById('randomResultContent');
+            content.textContent = `👤 ${randomPerson.displayName}`;
+
+            result.style.display = 'block';
+            setTimeout(() => {
+                result.classList.add('show');
+            }, 10);
+        });
+
+        // Random group
+        document.getElementById('randomGroupBtn').addEventListener('click', () => {
+            if (groups.length === 0) return;
+
+            const randomGroup = groups[Math.floor(Math.random() * groups.length)];
+            const groupIndex = groups.indexOf(randomGroup) + 1;
+            const members = randomGroup.map(p => p.displayName).join(', ');
+
+            const result = document.getElementById('randomResult');
+            const content = document.getElementById('randomResultContent');
+            content.innerHTML = `
+                <div style="font-size: 1.1em; margin-bottom: 8px;">👥 Gruppe ${groupIndex}</div>
+                <div style="font-size: 0.85em;">${members}</div>
+            `;
+
+            result.style.display = 'block';
+            setTimeout(() => {
+                result.classList.add('show');
+            }, 10);
+        });
+
+        // Clear random result
+        document.getElementById('clearRandomBtn').addEventListener('click', () => {
+            const result = document.getElementById('randomResult');
+            result.classList.remove('show');
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 5);
+        });
+
+        // Save list
+        document.getElementById('saveListBtn').addEventListener('click', () => {
+            let name = document.getElementById('listName').value.trim();
+
+            if (!name) {
+                if (currentListName && currentListName.startsWith('[TEMP] ')) {
+                    name = currentListName.replace('[TEMP] ', '');
+                } else if (currentListName && currentListName.startsWith('[SAVED] ')) {
+                    name = currentListName.replace('[SAVED] ', '');
+                } else {
+                    name = currentListName || 'Neue Liste';
+                }
+            }
+
+            const savedName = `[SAVED] ${name}`;
+
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+            if (lists[savedName] && !confirm(`Liste "${name}" existiert bereits. Überschreiben?`)) {
+                return;
+            }
+
+            if (currentListName && currentListName !== savedName) {
+                delete lists[currentListName];
+            }
+
+            lists[savedName] = {
+                people: people,
+                groups: groups,
+                settings: {
+                    colFirstName: document.getElementById('colFirstName').value,
+                    colLastName: document.getElementById('colLastName').value,
+                    colExclusions: document.getElementById('colExclusions').value,
+                    skipFirstRow: document.getElementById('skipFirstRow').checked,
+                    mode: document.querySelector('input[name="mode"]:checked').value,
+                    distributionValue: document.getElementById('distributionValue').value,
+                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                },
+                timestamp: new Date().toISOString(),
+                isTemp: false
+            };
+
+            localStorage.setItem('savedLists', JSON.stringify(lists));
+            currentListName = savedName;
+            document.getElementById('listName').value = '';
+
+            localStorage.setItem('currentListName', savedName);
+
+            loadSavedLists();
+            updateFileDisplay();
+            showToast(`Liste "${name}" gespeichert!`);
+        });
+
+        // Clear current list
+        function clearCurrentList() {
+            if (!currentListName) {
+                showToast('Keine Liste geladen!', 'warning');
+                return;
+            }
+
+            if (confirm(`Möchten Sie die aktuell geladene Liste "${currentListName}" aus dem Speicher löschen?`)) {
+                deleteList(currentListName);
             }
         }
 
-        // Delete current distribution
-        function deleteCurrentDistribution() {
-            currentGroups = [];
-            groupsContainer.innerHTML = '';
-            exportBtn.disabled = true;
-            document.getElementById('deleteGroupsBtn').disabled = true;
-            document.getElementById('randomGroupBtn').disabled = true;
+        // Load saved lists
+        function loadSavedLists() {
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+            const container = document.getElementById('savedListsContainer');
 
-            // Speichere den geänderten Zustand
-            saveLastDistribution();
-            if (currentListName) {
-                updateLoadedList();
+            if (Object.keys(lists).length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">Keine gespeicherten Listen</p>';
+                return;
             }
+
+            const sortedListNames = Object.keys(lists).sort((a, b) => {
+                const aIsTemp = lists[a].isTemp;
+                const bIsTemp = lists[b].isTemp;
+                if (aIsTemp && !bIsTemp) return 1;
+                if (!aIsTemp && bIsTemp) return -1;
+                return 0;
+            });
+
+            container.innerHTML = sortedListNames.map(name => {
+                const list = lists[name];
+                const isActive = name === currentListName;
+                const date = list.timestamp ? new Date(list.timestamp).toLocaleDateString('de-DE') : '';
+                const personCount = list.people ? list.people.length : 0;
+                const isTemp = list.isTemp === true;
+
+                const icon = isTemp ? '📝' : '💾';
+                const tempBadge = isTemp ? '<span style="font-size: 0.65em; color: #e67e22; background: rgba(243, 156, 18, 0.1); padding: 1px 4px; border-radius: 3px; margin-left: 4px;">TEMP</span>' : '';
+
+                return `
+                    <div class="saved-list-item ${isActive ? 'active' : ''}">
+                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
+                            ${icon} ${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}
+                            ${tempBadge}
+                            <div style="font-size: 0.75em; color: ${isActive ? 'white' : '#666'}; font-weight: normal;">
+                                ${personCount} Personen • ${date}
+                            </div>
+                        </span>
+                        <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Random selection functions
-        function selectRandomPerson() {
-            const firstNameColIndex = parseInt(nameColumn.value);
-            const lastNameColIndex = parseInt(lastNameColumn.value);
-            const skipFirstRow = ignoreFirstRow.checked;
-
-            let dataToProcess = [...currentData];
-            if (skipFirstRow && dataToProcess.length > 0) {
-                dataToProcess = dataToProcess.slice(1);
+        // Load specific list
+        function loadList(name, silent = false) {
+            if (currentListName === name && !silent) {
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" ist bereits geladen`, 'info');
+                return;
             }
 
-            // Extract active persons (not ignored)
-            const activPersons = [];
-            dataToProcess.forEach((row, index) => {
-                if (!ignoredPersons.has(index)) {
-                    const firstName = row[firstNameColIndex];
-                    const lastName = lastNameColIndex >= 0 ? row[lastNameColIndex] : '';
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+            const list = lists[name];
 
-                    if (firstName && firstName.toString().trim() !== '') {
-                        const firstNameStr = firstName.toString().trim();
-                        const lastNameStr = lastName ? lastName.toString().trim() : '';
-                        const fullName = lastNameStr ? `${firstNameStr} ${lastNameStr}` : firstNameStr;
-                        activPersons.push(fullName);
-                    }
+            if (!list) {
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wurde nicht gefunden`, 'error');
+                return;
+            }
+
+            isLoadingList = true;
+
+            people = list.people || [];
+            currentListName = name;
+
+            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, name);
+
+            firstNameCount = {};
+            people.forEach(person => {
+                firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
+            });
+
+            people.forEach(person => {
+                if (firstNameCount[person.firstName] > 1 && person.lastName) {
+                    const lastNamePart = person.lastName.substring(0, 3);
+                    person.displayName = `${person.firstName} ${lastNamePart}.`;
+                } else {
+                    person.displayName = person.firstName;
                 }
             });
 
-            if (activPersons.length === 0) {
-                alert('❌ Keine aktiven Personen verfügbar!');
-                return;
+            groups = list.groups || [];
+
+            if (list.settings) {
+                document.getElementById('colFirstName').value = list.settings.colFirstName || 0;
+                document.getElementById('colLastName').value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
+                document.getElementById('colExclusions').value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
+                document.getElementById('skipFirstRow').checked = list.settings.skipFirstRow !== false;
+
+                if (list.settings.mode) {
+                    document.querySelector(`input[name="mode"][value="${list.settings.mode}"]`).checked = true;
+                    const isSize = list.settings.mode === 'size';
+                    document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                    document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                }
+
+                if (list.settings.distributionValue) {
+                    document.getElementById('distributionValue').value = list.settings.distributionValue;
+                }
+
+                if (list.settings.restMode) {
+                    document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`).checked = true;
+                }
             }
 
-            const randomIndex = Math.floor(Math.random() * activPersons.length);
-            const selectedPerson = activPersons[randomIndex];
+            renderPersonList();
+            personListCard.style.display = 'block';
+            distributionCard.style.display = 'block';
+            randomCard.style.display = 'block';
+            listManagementCard.style.display = 'block';
 
-            displayRandomResult(selectedPerson);
-        }
-
-        function selectRandomGroup() {
-            if (currentGroups.length === 0) {
-                alert('❌ Bitte erst Gruppen einteilen!');
-                return;
-            }
-
-            const randomIndex = Math.floor(Math.random() * currentGroups.length);
-            const selectedGroup = currentGroups[randomIndex];
-
-            const groupText = `Gruppe ${randomIndex + 1}\n${selectedGroup.map(p => p.displayName).join(', ')}`;
-
-            displayRandomResult(groupText, true);
-        }
-
-        function displayRandomResult(result, isGroup = false) {
-            const resultContainer = document.getElementById('randomResultContainer');
-            const resultDiv = document.getElementById('randomResult');
-
-            if (isGroup) {
-                const [groupTitle, members] = result.split('\n');
-                resultDiv.innerHTML = `<div style="text-align: center;"><div style="font-size: 1.5em; margin-bottom: 15px;">${groupTitle}</div><div style="font-size: 1.1em; color: #666;">${members}</div></div>`;
+            if (groups.length > 0) {
+                renderGroups();
+                groupsCard.style.display = 'block';
+                document.getElementById('randomGroupBtn').disabled = false;
             } else {
-                resultDiv.textContent = result;
+                groupsCard.style.display = 'none';
+                document.getElementById('randomGroupBtn').disabled = true;
             }
 
-            resultContainer.style.display = 'block';
-            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('randomResult').classList.remove('show');
+            document.getElementById('randomResult').style.display = 'none';
+
+            updateFileDisplay();
+            loadSavedLists();
+
+            isLoadingList = false;
+            saveState();
+
+            if (!silent) {
+                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" geladen!`);
+            }
         }
+
+        // Delete list
+        function deleteList(name) {
+            if (!confirm(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wirklich löschen?`)) return;
+
+            const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
+            delete lists[name];
+            localStorage.setItem('savedLists', JSON.stringify(lists));
+
+            if (currentListName === name) {
+                currentListName = '';
+                localStorage.removeItem(STORAGE_KEYS.CURRENT_LIST);
+
+                people = [];
+                groups = [];
+
+                renderPersonList();
+                personListCard.style.display = 'none';
+                distributionCard.style.display = 'none';
+                randomCard.style.display = 'none';
+                groupsCard.style.display = 'none';
+                
+                // Keep listManagementCard visible if there are still lists
+                if (Object.keys(lists).length === 0) {
+                    listManagementCard.style.display = 'none';
+                }
+                
+                updateFileDisplay();
+            }
+
+            loadSavedLists();
+            showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" gelöscht`);
+        }
+
+        // Download example file
+        document.getElementById('downloadExample').addEventListener('click', (e) => {
+            e.preventDefault();
+
+            const exampleData = [
+                ['Vorname', 'Ausschlüsse', 'Nachname'],
+                ['Max', 'Anna, Peter', 'Müller'],
+                ['Anna', 'Max', 'Schmidt'],
+                ['Peter', '', 'Braun'],
+                ['Sarah', 'Anna', 'Hoffmann'],
+                ['Lisa', '', 'Weber'],
+                ['Tom', 'Sarah', 'Meyer'],
+                ['Julia', '', 'Wagner'],
+                ['Ben', 'Tom', 'Schulz'],
+                ['Maria', 'Ben, Julia', 'Klein'],
+                ['Paul', '', 'Fischer'],
+                ['Laura', 'Maria', 'Schäfer']
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(exampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Beispiel");
+            XLSX.writeFile(wb, "Beispiel-Gruppenliste.xlsx");
+
+            showToast('Beispiel-Datei wurde heruntergeladen!');
+        });
+
+        // Initialize
+        loadSavedLists();
+        loadState();
+
+        // Show welcome message
+        setTimeout(() => {
+            if (people.length === 0) {
+                showToast('Laden Sie eine Datei hoch oder wählen Sie eine gespeicherte Liste aus!', 'info');
+            }
+        }, 1000);
     </script>
 </body>
 

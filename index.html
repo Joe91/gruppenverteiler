@@ -1234,13 +1234,13 @@
                             people: people,
                             groups: groups,
                             settings: {
-                                colFirstName: document.getElementById('colFirstName').value,
-                                colLastName: document.getElementById('colLastName').value,
-                                colExclusions: document.getElementById('colExclusions').value,
-                                skipFirstRow: document.getElementById('skipFirstRow').checked,
-                                mode: document.querySelector('input[name="mode"]:checked').value,
-                                distributionValue: document.getElementById('distributionValue').value,
-                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                                colFirstName: document.getElementById('colFirstName')?.value || 0,
+                                colLastName: document.getElementById('colLastName')?.value || -1,
+                                colExclusions: document.getElementById('colExclusions')?.value || 1,
+                                skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
+                                mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
+                                distributionValue: document.getElementById('distributionValue')?.value || 1,
+                                restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
                             },
                             timestamp: new Date().toISOString(),
                             isTemp: true
@@ -1250,13 +1250,13 @@
                             people: people,
                             groups: groups,
                             settings: {
-                                colFirstName: document.getElementById('colFirstName').value,
-                                colLastName: document.getElementById('colLastName').value,
-                                colExclusions: document.getElementById('colExclusions').value,
-                                skipFirstRow: document.getElementById('skipFirstRow').checked,
-                                mode: document.querySelector('input[name="mode"]:checked').value,
-                                distributionValue: document.getElementById('distributionValue').value,
-                                restMode: document.querySelector('input[name="restMode"]:checked').value
+                                colFirstName: document.getElementById('colFirstName')?.value || 0,
+                                colLastName: document.getElementById('colLastName')?.value || -1,
+                                colExclusions: document.getElementById('colExclusions')?.value || 1,
+                                skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
+                                mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
+                                distributionValue: document.getElementById('distributionValue')?.value || 1,
+                                restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
                             },
                             timestamp: new Date().toISOString(),
                             isTemp: false
@@ -1267,13 +1267,13 @@
                 }
 
                 const settings = {
-                    colFirstName: document.getElementById('colFirstName').value,
-                    colLastName: document.getElementById('colLastName').value,
-                    colExclusions: document.getElementById('colExclusions').value,
-                    skipFirstRow: document.getElementById('skipFirstRow').checked,
-                    mode: document.querySelector('input[name="mode"]:checked').value,
-                    distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                    colFirstName: document.getElementById('colFirstName')?.value || 0,
+                    colLastName: document.getElementById('colLastName')?.value || -1,
+                    colExclusions: document.getElementById('colExclusions')?.value || 1,
+                    skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
+                    mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
+                    distributionValue: document.getElementById('distributionValue')?.value || 1,
+                    restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
                 };
                 localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 
@@ -1921,15 +1921,17 @@
 
         // Save list
         document.getElementById('saveListBtn').addEventListener('click', () => {
+            // Capture currentListName at the start to avoid race conditions
+            const previousListName = currentListName;
             let name = document.getElementById('listName').value.trim();
 
             if (!name) {
-                if (currentListName && currentListName.startsWith('[TEMP] ')) {
-                    name = currentListName.replace('[TEMP] ', '');
-                } else if (currentListName && currentListName.startsWith('[SAVED] ')) {
-                    name = currentListName.replace('[SAVED] ', '');
+                if (previousListName && previousListName.startsWith('[TEMP] ')) {
+                    name = previousListName.replace('[TEMP] ', '');
+                } else if (previousListName && previousListName.startsWith('[SAVED] ')) {
+                    name = previousListName.replace('[SAVED] ', '');
                 } else {
-                    name = currentListName || 'Neue Liste';
+                    name = previousListName || 'Neue Liste';
                 }
             }
 
@@ -1940,21 +1942,21 @@
                 return;
             }
 
-            if (currentListName && currentListName !== savedName) {
-                delete lists[currentListName];
+            if (previousListName && previousListName !== savedName) {
+                delete lists[previousListName];
             }
 
             lists[savedName] = {
                 people: people,
                 groups: groups,
                 settings: {
-                    colFirstName: document.getElementById('colFirstName').value,
-                    colLastName: document.getElementById('colLastName').value,
-                    colExclusions: document.getElementById('colExclusions').value,
-                    skipFirstRow: document.getElementById('skipFirstRow').checked,
-                    mode: document.querySelector('input[name="mode"]:checked').value,
-                    distributionValue: document.getElementById('distributionValue').value,
-                    restMode: document.querySelector('input[name="restMode"]:checked').value
+                    colFirstName: document.getElementById('colFirstName')?.value || 0,
+                    colLastName: document.getElementById('colLastName')?.value || -1,
+                    colExclusions: document.getElementById('colExclusions')?.value || 1,
+                    skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
+                    mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
+                    distributionValue: document.getElementById('distributionValue')?.value || 1,
+                    restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
                 },
                 timestamp: new Date().toISOString(),
                 isTemp: false
@@ -2065,24 +2067,36 @@
             groups = list.groups || [];
 
             if (list.settings) {
-                document.getElementById('colFirstName').value = list.settings.colFirstName || 0;
-                document.getElementById('colLastName').value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
-                document.getElementById('colExclusions').value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
-                document.getElementById('skipFirstRow').checked = list.settings.skipFirstRow !== false;
+                const colFirstNameEl = document.getElementById('colFirstName');
+                const colLastNameEl = document.getElementById('colLastName');
+                const colExclusionsEl = document.getElementById('colExclusions');
+                const skipFirstRowEl = document.getElementById('skipFirstRow');
+                const distributionValueEl = document.getElementById('distributionValue');
+                
+                if (colFirstNameEl) colFirstNameEl.value = list.settings.colFirstName || 0;
+                if (colLastNameEl) colLastNameEl.value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
+                if (colExclusionsEl) colExclusionsEl.value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
+                if (skipFirstRowEl) skipFirstRowEl.checked = list.settings.skipFirstRow !== false;
 
                 if (list.settings.mode) {
-                    document.querySelector(`input[name="mode"][value="${list.settings.mode}"]`).checked = true;
-                    const isSize = list.settings.mode === 'size';
-                    document.getElementById('valueLabel').textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
-                    document.getElementById('restModeGroup').style.display = isSize ? 'block' : 'none';
+                    const modeRadio = document.querySelector(`input[name="mode"][value="${list.settings.mode}"]`);
+                    if (modeRadio) {
+                        modeRadio.checked = true;
+                        const isSize = list.settings.mode === 'size';
+                        const valueLabelEl = document.getElementById('valueLabel');
+                        const restModeGroupEl = document.getElementById('restModeGroup');
+                        if (valueLabelEl) valueLabelEl.textContent = isSize ? 'Gruppengröße' : 'Anzahl Gruppen';
+                        if (restModeGroupEl) restModeGroupEl.style.display = isSize ? 'block' : 'none';
+                    }
                 }
 
-                if (list.settings.distributionValue) {
-                    document.getElementById('distributionValue').value = list.settings.distributionValue;
+                if (list.settings.distributionValue && distributionValueEl) {
+                    distributionValueEl.value = list.settings.distributionValue;
                 }
 
                 if (list.settings.restMode) {
-                    document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`).checked = true;
+                    const restModeRadio = document.querySelector(`input[name="restMode"][value="${list.settings.restMode}"]`);
+                    if (restModeRadio) restModeRadio.checked = true;
                 }
             }
 

@@ -911,6 +911,12 @@
         const toggleExclusionsBtn = document.getElementById('toggleExclusionsBtn');
         const exclusionsToggleText = document.getElementById('exclusionsToggleText');
 
+        // Toggle quick help
+        document.getElementById('showQuickHelp').addEventListener('click', (e) => {
+            e.preventDefault();
+            quickHelp.classList.toggle('show');
+        });
+
         // ----- MIGRATIONSHELFER (Alt → Neu) ------------------------------------
         function convertOldListToNew(oldList, isTemp = false) {
             const data = oldList.data || [];
@@ -1693,7 +1699,7 @@
         }
 
         // Toggle person
-        window.togglePerson = function(index) {
+        window.togglePerson = function (index) {
             people[index].ignored = !people[index].ignored;
             renderPersonList();
             updateRestModeHint();
@@ -1974,7 +1980,7 @@
         });
 
         // Clear current list
-        window.clearCurrentList = function() {
+        window.clearCurrentList = function () {
             if (!currentListName) {
                 showToast('Keine Liste geladen!', 'warning');
                 return;
@@ -2029,7 +2035,7 @@
         }
 
         // Load specific list
-        window.loadList = function(name, silent = false) {
+        window.loadList = function (name, silent = false) {
             if (currentListName === name && !silent) {
                 showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" ist bereits geladen`, 'info');
                 return;
@@ -2072,7 +2078,7 @@
                 const colExclusionsEl = document.getElementById('colExclusions');
                 const skipFirstRowEl = document.getElementById('skipFirstRow');
                 const distributionValueEl = document.getElementById('distributionValue');
-                
+
                 if (colFirstNameEl) colFirstNameEl.value = list.settings.colFirstName || 0;
                 if (colLastNameEl) colLastNameEl.value = list.settings.colLastName !== undefined ? list.settings.colLastName : -1;
                 if (colExclusionsEl) colExclusionsEl.value = list.settings.colExclusions !== undefined ? list.settings.colExclusions : 1;
@@ -2130,7 +2136,7 @@
         };
 
         // Delete list
-        window.deleteList = function(name) {
+        window.deleteList = function (name) {
             if (!confirm(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wirklich löschen?`)) return;
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
@@ -2149,12 +2155,12 @@
                 distributionCard.style.display = 'none';
                 randomCard.style.display = 'none';
                 groupsCard.style.display = 'none';
-                
+
                 // Keep listManagementCard visible if there are still lists
                 if (Object.keys(lists).length === 0) {
                     listManagementCard.style.display = 'none';
                 }
-                
+
                 updateFileDisplay();
             }
 

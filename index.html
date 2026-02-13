@@ -556,6 +556,15 @@
             margin-bottom: 12px;
             padding-bottom: 8px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-count {
+            font-size: 0.9rem;
+            font-weight: normal;
+            font-weight: bold;
         }
 
         .group-members {
@@ -1825,7 +1834,10 @@
 
                 return `
                     <div class="group">
-                        <div class="group-header">Gruppe ${index + 1} (${group.length} Personen)</div>
+                        <div class="group-header">
+                            <span> Gruppe ${index + 1}</span>
+                            <span class="group-count"><i>${group.length} ${group.length === 1 ? 'Person' : 'Personen'}</i></span>
+                        </div >     
                         <ul class="group-members">
                             ${members}
                         </ul>
@@ -2147,7 +2159,7 @@
             if (currentListName) {
                 html += `        <div class="subtitle">${currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '')}</div>\n`;
             }
-            
+
             html += `        <div class="date">${new Date().toLocaleString('de-DE')}</div>\n`;
             html += `        <div class="groups-container">\n`;
 

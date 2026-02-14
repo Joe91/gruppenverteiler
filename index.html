@@ -1890,7 +1890,7 @@
             try {
                 // Create a temporary container for the export
                 const exportContainer = document.createElement('div');
-                const screenWidth = window.innerWidth;
+                const screenWidth = Math.max(Math.min(window.innerWidth, 1600), 800); // Limit width for better readability
                 exportContainer.style.cssText = `
                     position: fixed;
                     left: -9999px;
@@ -1984,7 +1984,7 @@
                 return;
             }
 
-            // Build HTML for new window
+            // Build HTML for new window - with transparent container matching main page
             let html = `
 <!DOCTYPE html>
 <html lang="de">
@@ -2005,121 +2005,123 @@
             padding: 20px;
         }
         .container {
-            max-width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            background: transparent;
+            padding: 20px;
         }
         h1 {
-            color: #667eea;
-            margin-bottom: 15px;
+            color: white;
+            margin-bottom: 30px;
             text-align: center;
-            font-size: 2.8em;
-            font-weight: 700;
+            font-size: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         .subtitle {
-            color: #666;
+            color: rgba(255, 255, 255, 0.95);
             margin-bottom: 8px;
             text-align: center;
             font-size: 1.3em;
             font-weight: 500;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
         .date {
-            color: #999;
-            margin-bottom: 50px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
             text-align: center;
             font-size: 1em;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .block {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: none;
         }
         .groups-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
         }
         .group-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border: 2px solid #667eea;
-            border-radius: 16px;
-            padding: 25px;
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: white;
+            transition: transform 0.2s;
         }
         .group-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
-            border-color: #764ba2;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
         .group-header {
-            color: #667eea;
+            font-size: 1.3em;
             font-weight: 700;
-            font-size: 1.4em;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 3px solid #667eea;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 8px;
         }
         .group-count {
             font-size: 0.7em;
-            color: #999;
+            opacity: 0.8;
             font-weight: 500;
         }
         .group-member {
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            background: white;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-            font-size: 1.05em;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-        }
-        .group-member:hover {
-            transform: translateX(5px);
-            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.15);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            backdrop-filter: blur(5px);
+            margin-bottom: 6px;
         }
         .group-member:last-child {
             margin-bottom: 0;
         }
         .actions {
             display: flex;
-            gap: 20px;
+            gap: 12px;
             justify-content: center;
-            margin-top: 50px;
-            padding-top: 40px;
-            border-top: 2px solid #e0e0e0;
+            margin-top: 25px;
+            flex-wrap: wrap;
         }
         .btn {
-            padding: 16px 32px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 12px;
-            font-size: 1.1em;
-            font-weight: 600;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
         }
         .btn-secondary {
-            background: #f8f9fa;
-            color: #667eea;
-            border: 2px solid #667eea;
+            background: #6c757d;
+            color: white;
         }
         .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+            background: #5a6268;
+            transform: translateY(-2px);
         }
         @media print {
             body {
@@ -2127,8 +2129,11 @@
                 padding: 0;
             }
             .container {
-                box-shadow: none;
                 padding: 20px;
+            }
+            h1, .subtitle, .date {
+                color: #333;
+                text-shadow: none;
             }
             .actions {
                 display: none;
@@ -2139,21 +2144,21 @@
         }
         @media (max-width: 768px) {
             .container {
-                padding: 30px 20px;
+                padding: 15px;
             }
             h1 {
                 font-size: 2em;
             }
             .groups-container {
                 grid-template-columns: 1fr;
-                gap: 20px;
+                gap: 15px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Gruppeneinteilung</h1>
+        <h1>🎯 Gruppeneinteilung</h1>
 `;
 
             if (currentListName) {
@@ -2161,6 +2166,7 @@
             }
 
             html += `        <div class="date">${new Date().toLocaleString('de-DE')}</div>\n`;
+            html += `        <div class="block">\n`;
             html += `        <div class="groups-container">\n`;
 
             groups.forEach((group, index) => {
@@ -2177,8 +2183,9 @@
 
             html += `        </div>\n`;
             html += `        <div class="actions">\n`;
-            html += `            <button class="btn btn-primary" onclick="window.print()">🖨️ Drucken</button>\n`;
-            html += `            <button class="btn btn-secondary" onclick="window.close()">✕ Schließen</button>\n`;
+            html += `            <button class="btn btn-primary" onclick="window.print()">🖨️ Drucken / Als PDF speichern</button>\n`;
+            html += `            <button class="btn btn-secondary" onclick="window.close()">✖️ Schließen</button>\n`;
+            html += `        </div>\n`;
             html += `        </div>\n`;
             html += `    </div>\n`;
             html += `</body>\n`;

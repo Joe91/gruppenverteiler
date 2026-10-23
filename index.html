@@ -377,6 +377,77 @@
             display: inline;
         }
 
+        /* ----- PERSONEN BEARBEITEN ----- */
+        .duplicate-warning {
+            background: #fff8f0;
+            border-left: 4px solid #e67e22;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .duplicate-warning.show {
+            display: block;
+        }
+
+        .duplicate-warning a {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .person-edit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 450px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+
+        .person-edit-header,
+        .person-edit-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .person-edit-header {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+            padding-right: 52px;
+        }
+
+        .person-edit-row input {
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .person-edit-row.duplicate input[data-field="firstName"],
+        .person-edit-row.duplicate input[data-field="lastName"],
+        .person-edit-row input.unknown-exclusion {
+            border-color: #e67e22;
+            background: #fff8f0;
+        }
+
+        .person-edit-row .delete-list-btn {
+            padding: 6px 10px;
+        }
+
+        .link-row {
+            text-align: center;
+            margin-top: 12px;
+        }
+
         /* ----- EINHEITLICHE BUTTONS (überarbeitet) ----- */
         .btn {
             padding: 12px 24px;
@@ -702,6 +773,21 @@
             .person-actions {
                 flex-wrap: wrap;
             }
+
+            .person-edit-header {
+                display: none;
+            }
+
+            .person-edit-row {
+                grid-template-columns: 1fr 1fr auto;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .person-edit-row input[data-field="exclusions"] {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
         }
     </style>
 </head>
@@ -727,7 +813,7 @@
                 <div class="help-title">🚀 Schnellstart</div>
                 <p style="font-size: 0.95rem; line-height: 1.5;">
                     1. <strong>Datei hochladen</strong> (Excel/CSV, Vorname in Spalte A)<br>
-                    2. <strong>Personen prüfen</strong> – klicken zum Ignorieren<br>
+                    2. <strong>Personen prüfen</strong> – klicken zum Ignorieren, ✏️ zum Bearbeiten<br>
                     3. <strong>Einstellungen wählen</strong> (Anzahl Gruppen oder Gruppengröße)<br>
                     4. <strong>Gruppen einteilen</strong> und exportieren
                 </p>
@@ -739,6 +825,9 @@
                 <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;">Datei ablegen oder klicken</div>
                 <div style="color: #666; font-size: 0.9rem;">Excel (.xlsx, .xls) oder CSV</div>
                 <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+            </div>
+            <div class="link-row">
+                <a href="#" id="createEmptyList" class="help-link">✏️ oder Liste ohne Datei erstellen</a>
             </div>
             <div id="filePreview" class="file-preview">
                 <strong>Geladen:</strong> <span id="fileName"></span>
@@ -812,8 +901,21 @@
                     <button class="btn btn-sm btn-secondary" id="resetIgnoreBtn">🔄 Alle aktivieren</button>
                     <button class="btn btn-sm btn-secondary" id="toggleExclusionsBtn">👁️ <span
                             id="exclusionsToggleText">Ausschlüsse anzeigen</span></button>
+                    <button class="btn btn-sm btn-secondary" id="editPeopleBtn">✏️ <span
+                            id="editPeopleText">Liste bearbeiten</span></button>
                 </div>
+                <div id="duplicateWarning" class="duplicate-warning"></div>
                 <div id="personList" class="person-grid"></div>
+                <div id="personEditor" style="display: none;">
+                    <div class="person-edit-header">
+                        <span>Vorname</span><span>Nachname</span><span>Ausschlüsse (Komma-getrennt)</span>
+                    </div>
+                    <div id="personEditRows" class="person-edit-list"></div>
+                    <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+                        <button class="btn btn-sm btn-success" id="addPersonBtn">➕ Person hinzufügen</button>
+                        <button class="btn btn-sm btn-primary" id="finishEditBtn">✓ Fertig</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1027,6 +1129,83 @@
             };
         }
 
+        // ----- HILFSFUNKTIONEN ------------------------------------------------
+        function escapeHtml(text) {
+            return String(text ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Für onclick="fn('...')": erst als JS-String, dann als HTML-Attribut escapen
+        function jsAttr(text) {
+            return escapeHtml(String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
+
+        function displayListName(name) {
+            return (name || '').replace('[TEMP] ', '').replace('[SAVED] ', '');
+        }
+
+        function collectSettings() {
+            return {
+                colFirstName: document.getElementById('colFirstName')?.value || 0,
+                colLastName: document.getElementById('colLastName')?.value || -1,
+                colExclusions: document.getElementById('colExclusions')?.value || 1,
+                skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
+                mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
+                distributionValue: document.getElementById('distributionValue')?.value || 1,
+                restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
+            };
+        }
+
+        // Jede Person braucht eine eindeutige originalIndex (Zuordnung Person ↔ Gruppenmitglied)
+        function ensurePersonIds() {
+            let nextId = Math.max(-1, ...people.map(p => Number.isInteger(p.originalIndex) ? p.originalIndex : -1)) + 1;
+            people.forEach(p => {
+                if (!Number.isInteger(p.originalIndex)) p.originalIndex = nextId++;
+                if (!Array.isArray(p.exclusions)) p.exclusions = [];
+                if (p.lastName == null) p.lastName = '';
+            });
+        }
+
+        // Vornamen zählen und eindeutige Anzeigenamen vergeben
+        function updateDisplayNames() {
+            ensurePersonIds();
+            const countBy = key => people.reduce((m, p) => (m[key(p)] = (m[key(p)] || 0) + 1, m), {});
+
+            firstNameCount = countBy(p => p.firstName);
+            people.forEach(person => {
+                if (firstNameCount[person.firstName] > 1 && person.lastName) {
+                    const lastNamePart = person.lastName.substring(0, 3);
+                    person.displayName = `${person.firstName} ${lastNamePart}.`;
+                } else {
+                    person.displayName = person.firstName;
+                }
+            });
+
+            // Kollisionen auflösen: erst voller Nachname (Müller/Müllner), dann Nummerierung (identische Namen)
+            let displayCount = countBy(p => p.displayName);
+            people.forEach(p => {
+                if (displayCount[p.displayName] > 1 && p.lastName) p.displayName = `${p.firstName} ${p.lastName}`;
+            });
+            displayCount = countBy(p => p.displayName);
+            const seen = {};
+            people.forEach(p => {
+                const base = p.displayName;
+                if (displayCount[base] > 1) {
+                    seen[base] = (seen[base] || 0) + 1;
+                    p.displayName = `${base} (${seen[base]})`;
+                }
+            });
+        }
+
+        // Gruppenmitglieder sind Kopien – nach Bearbeitung mit der Personenliste abgleichen
+        function syncGroupsWithPeople(dropMissing = true) {
+            const byId = new Map(people.map(p => [p.originalIndex, p]));
+            groups = groups.map(group => group
+                .filter(m => !dropMissing || m.originalIndex === undefined || byId.has(m.originalIndex))
+                .map(m => byId.has(m.originalIndex) ? { ...byId.get(m.originalIndex), index: m.index } : m));
+        }
+
         // ----- Toast (unverändert) ---------------------------------------------
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -1059,11 +1238,11 @@
             if (currentListName) {
                 filePreview.style.display = 'block';
                 const isTemp = currentListName.startsWith('[TEMP] ');
-                const listName = currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '');
+                const listName = displayListName(currentListName);
                 const icon = isTemp ? '📝' : '💾';
                 const status = isTemp ? '(Temporär)' : '(Gespeichert)';
 
-                fileName.innerHTML = `${icon} <strong>${listName}</strong> ${status}`;
+                fileName.innerHTML = `${icon} <strong>${escapeHtml(listName)}</strong> ${status}`;
                 fileStats.textContent = `${people.length} Personen, ${groups.length} Gruppen`;
             } else if (people.length > 0) {
                 filePreview.style.display = 'block';
@@ -1086,14 +1265,19 @@
 
         // Check exclusion
         function checkExclusion(person, member, firstNameCount) {
-            return person.exclusions.some(exclusion => {
-                const exc = exclusion.trim();
-                if (exc === member.displayName) return true;
-                if (exc === member.firstName && firstNameCount[member.firstName] === 1) return true;
-                if (member.lastName && exc === `${member.firstName} ${member.lastName}`) return true;
-                if (member.lastName && exc === `${member.firstName} ${member.lastName.substring(0, 3)}.`) return true;
-                return false;
-            });
+            return person.exclusions.some(exclusion => exclusionMatches(exclusion, member, firstNameCount));
+        }
+
+        // Passt ein einzelner Ausschluss-Eintrag auf diese Person?
+        function exclusionMatches(exclusion, member, firstNameCount) {
+            const exc = exclusion.trim();
+            if (exc === member.displayName) return true;
+            if (exc === member.firstName && firstNameCount[member.firstName] === 1) return true;
+            // Ohne Nachnamen war der Vorname schon immer der Anzeigename
+            if (exc === member.firstName && !member.lastName) return true;
+            if (member.lastName && exc === `${member.firstName} ${member.lastName}`) return true;
+            if (member.lastName && exc === `${member.firstName} ${member.lastName.substring(0, 3)}.`) return true;
+            return false;
         }
 
         // Count conflicts in a group
@@ -1248,53 +1432,20 @@
                 if (currentListName) {
                     const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
-                    if (currentListName.startsWith('[TEMP] ')) {
+                    if (currentListName.startsWith('[TEMP] ') || currentListName.startsWith('[SAVED] ')) {
                         lists[currentListName] = {
                             people: people,
                             groups: groups,
-                            settings: {
-                                colFirstName: document.getElementById('colFirstName')?.value || 0,
-                                colLastName: document.getElementById('colLastName')?.value || -1,
-                                colExclusions: document.getElementById('colExclusions')?.value || 1,
-                                skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
-                                mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
-                                distributionValue: document.getElementById('distributionValue')?.value || 1,
-                                restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
-                            },
+                            settings: collectSettings(),
                             timestamp: new Date().toISOString(),
-                            isTemp: true
-                        };
-                    } else if (currentListName.startsWith('[SAVED] ')) {
-                        lists[currentListName] = {
-                            people: people,
-                            groups: groups,
-                            settings: {
-                                colFirstName: document.getElementById('colFirstName')?.value || 0,
-                                colLastName: document.getElementById('colLastName')?.value || -1,
-                                colExclusions: document.getElementById('colExclusions')?.value || 1,
-                                skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
-                                mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
-                                distributionValue: document.getElementById('distributionValue')?.value || 1,
-                                restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
-                            },
-                            timestamp: new Date().toISOString(),
-                            isTemp: false
+                            isTemp: currentListName.startsWith('[TEMP] ')
                         };
                     }
 
                     localStorage.setItem('savedLists', JSON.stringify(lists));
                 }
 
-                const settings = {
-                    colFirstName: document.getElementById('colFirstName')?.value || 0,
-                    colLastName: document.getElementById('colLastName')?.value || -1,
-                    colExclusions: document.getElementById('colExclusions')?.value || 1,
-                    skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
-                    mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
-                    distributionValue: document.getElementById('distributionValue')?.value || 1,
-                    restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
-                };
-                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(collectSettings()));
 
             } catch (e) {
                 console.error('Error saving state:', e);
@@ -1410,19 +1561,7 @@
                     people = JSON.parse(savedPeople);
                     if (people.length > 0) {
                         currentListName = '[TEMP] Letzte Änderungen';
-                        firstNameCount = {};
-                        people.forEach(person => {
-                            firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
-                        });
-
-                        people.forEach(person => {
-                            if (firstNameCount[person.firstName] > 1 && person.lastName) {
-                                const lastNamePart = person.lastName.substring(0, 3);
-                                person.displayName = `${person.firstName} ${lastNamePart}.`;
-                            } else {
-                                person.displayName = person.firstName;
-                            }
-                        });
+                        updateDisplayNames();
 
                         renderPersonList();
                         personListCard.style.display = 'block';
@@ -1599,14 +1738,13 @@
 
             for (let i = startRow; i < rows.length; i++) {
                 const row = rows[i];
-                if (!row[colFirst]) continue;
+                if (!row || !row[colFirst]) continue;
 
                 const firstName = row[colFirst].toString().trim();
+                if (!firstName) continue;
                 const lastName = colLast >= 0 && row[colLast] ? row[colLast].toString().trim() : '';
                 const exclusions = colExcl >= 0 && row[colExcl] ?
                     row[colExcl].toString().split(/[,;]/).map(e => e.trim()).filter(e => e) : [];
-
-                firstNameCount[firstName] = (firstNameCount[firstName] || 0) + 1;
 
                 people.push({
                     firstName,
@@ -1617,14 +1755,7 @@
                 });
             }
 
-            people.forEach(person => {
-                if (firstNameCount[person.firstName] > 1 && person.lastName) {
-                    const lastNamePart = person.lastName.substring(0, 3);
-                    person.displayName = `${person.firstName} ${lastNamePart}.`;
-                } else {
-                    person.displayName = person.firstName;
-                }
-            });
+            updateDisplayNames();
 
             const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
             const fileName = currentFileData?.name || 'Neue Liste';
@@ -1651,43 +1782,19 @@
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
 
             const savedVersionName = currentListName.replace('[TEMP] ', '[SAVED] ');
-            if (lists[savedVersionName]) {
-                currentListName = savedVersionName;
-                lists[currentListName] = {
-                    people: people,
-                    groups: groups,
-                    settings: {
-                        colFirstName: document.getElementById('colFirstName').value,
-                        colLastName: document.getElementById('colLastName').value,
-                        colExclusions: document.getElementById('colExclusions').value,
-                        skipFirstRow: document.getElementById('skipFirstRow').checked,
-                        mode: document.querySelector('input[name="mode"]:checked').value,
-                        distributionValue: document.getElementById('distributionValue').value,
-                        restMode: document.querySelector('input[name="restMode"]:checked').value
-                    },
-                    timestamp: new Date().toISOString(),
-                    isTemp: false
-                };
-            } else {
-                lists[currentListName] = {
-                    people: people,
-                    groups: groups,
-                    settings: {
-                        colFirstName: document.getElementById('colFirstName').value,
-                        colLastName: document.getElementById('colLastName').value,
-                        colExclusions: document.getElementById('colExclusions').value,
-                        skipFirstRow: document.getElementById('skipFirstRow').checked,
-                        mode: document.querySelector('input[name="mode"]:checked').value,
-                        distributionValue: document.getElementById('distributionValue').value,
-                        restMode: document.querySelector('input[name="restMode"]:checked').value
-                    },
-                    timestamp: new Date().toISOString(),
-                    isTemp: true
-                };
-            }
+            const isTemp = !lists[savedVersionName];
+            if (!isTemp) currentListName = savedVersionName;
+
+            lists[currentListName] = {
+                people: people,
+                groups: groups,
+                settings: collectSettings(),
+                timestamp: new Date().toISOString(),
+                isTemp
+            };
 
             localStorage.setItem('savedLists', JSON.stringify(lists));
-            localStorage.setItem('currentListName', currentListName);
+            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, currentListName);
         }
 
         // Render person list
@@ -1695,21 +1802,201 @@
             personList.innerHTML = people.map((person, index) => {
                 let exclusionInfo = '';
                 if (showExclusions && person.exclusions && person.exclusions.length > 0) {
-                    exclusionInfo = `<span class="exclusions-info show">(schließt aus: ${person.exclusions.join(', ')})</span>`;
+                    exclusionInfo = `<span class="exclusions-info show">(schließt aus: ${escapeHtml(person.exclusions.join(', '))})</span>`;
                 }
 
                 return `
                     <div class="person-item ${person.ignored ? 'ignored' : ''}" data-index="${index}">
-                        <input type="checkbox" class="person-checkbox" 
-                               ${person.ignored ? 'checked' : ''} 
+                        <input type="checkbox" class="person-checkbox"
+                               ${person.ignored ? 'checked' : ''}
                                onchange="togglePerson(${index})">
-                        <span>${person.displayName}${exclusionInfo}</span>
+                        <span>${escapeHtml(person.displayName)}${exclusionInfo}</span>
                     </div>
                 `;
             }).join('');
 
+            if (editMode) renderPersonEditor();
+            updateDuplicateWarning();
             updateStats();
         }
+
+        // ----- PERSONENLISTE BEARBEITEN -----------------------------------------
+        let editMode = false;
+        const personEditor = document.getElementById('personEditor');
+        const personEditRows = document.getElementById('personEditRows');
+
+        function setEditMode(on) {
+            editMode = on;
+            personEditor.style.display = on ? 'block' : 'none';
+            personList.style.display = on ? 'none' : '';
+            document.getElementById('editPeopleText').textContent = on ? 'Bearbeiten beenden' : 'Liste bearbeiten';
+            renderPersonList();
+        }
+
+        function renderPersonEditor() {
+            personEditRows.innerHTML = people.map((person, index) => `
+                <div class="person-edit-row" data-index="${index}">
+                    <input type="text" data-field="firstName" value="${escapeHtml(person.firstName)}" placeholder="Vorname">
+                    <input type="text" data-field="lastName" value="${escapeHtml(person.lastName)}" placeholder="Nachname">
+                    <input type="text" data-field="exclusions" value="${escapeHtml(person.exclusions.join(', '))}"
+                           placeholder="Ausschlüsse, z.B. Anna, Peter">
+                    <button class="delete-list-btn" data-action="delete" title="Person entfernen">🗑️</button>
+                </div>
+            `).join('');
+            updateEditWarnings();
+        }
+
+        // Gleiche Namen und nicht auffindbare Ausschlüsse markieren
+        function updateEditWarnings() {
+            personEditRows.querySelectorAll('.person-edit-row').forEach(row => {
+                const person = people[parseInt(row.dataset.index)];
+                if (!person) return;
+
+                const sameName = people.filter(p => p.firstName === person.firstName && p.lastName === person.lastName);
+                row.classList.toggle('duplicate', sameName.length > 1);
+                row.querySelector('[data-field="firstName"]').title = sameName.length > 1
+                    ? 'Gleicher Name mehrfach vorhanden – z.B. Nachnamen ergänzen' : '';
+
+                const unknown = person.exclusions.filter(exc =>
+                    !people.some(m => m !== person && exclusionMatches(exc, m, firstNameCount)));
+                const excInput = row.querySelector('[data-field="exclusions"]');
+                excInput.classList.toggle('unknown-exclusion', unknown.length > 0);
+                excInput.title = unknown.length ? `Nicht gefunden: ${unknown.join(', ')}` : '';
+            });
+        }
+
+        function updateDuplicateWarning() {
+            const counts = {};
+            people.forEach(p => {
+                const key = `${p.firstName} ${p.lastName}`.trim();
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            const duplicates = Object.keys(counts).filter(name => counts[name] > 1);
+            const warning = document.getElementById('duplicateWarning');
+
+            warning.classList.toggle('show', duplicates.length > 0);
+            warning.innerHTML = duplicates.length === 0 ? '' : editMode
+                ? `⚠️ Mehrfach vorhanden: <strong>${escapeHtml(duplicates.join(', '))}</strong> – markierte Zeilen z.B. um einen Nachnamen ergänzen.`
+                : `⚠️ Mehrfach vorhanden: <strong>${escapeHtml(duplicates.join(', '))}</strong> – <a href="#" data-action="edit">✏️ Liste bearbeiten</a>, um sie zu unterscheiden.`;
+        }
+
+        // Ausschluss-Einträge anderer Personen, die eindeutig auf diese Person zeigen
+        function findExclusionReferences(person) {
+            const refs = [];
+            people.forEach(other => {
+                if (other === person) return;
+                other.exclusions.forEach((exc, idx) => {
+                    const matches = people.filter(m => m !== other && exclusionMatches(exc, m, firstNameCount));
+                    if (matches.length === 1 && matches[0] === person) refs.push({ other, idx });
+                });
+            });
+            return refs;
+        }
+
+        // Nach jeder Änderung: Gruppen, Statistik, Speicher aktualisieren
+        function afterPeopleEdited() {
+            syncGroupsWithPeople();
+            if (groups.length > 0) renderGroups();
+            updateEditWarnings();
+            updateDuplicateWarning();
+            updateStats();
+            updateRestModeHint();
+            updateFileDisplay();
+            saveState();
+            loadSavedLists();
+        }
+
+        function addPerson() {
+            people.push({ firstName: 'Neue Person', lastName: '', exclusions: [], ignored: false });
+            updateDisplayNames();
+            renderPersonEditor();
+            afterPeopleEdited();
+
+            const input = personEditRows.querySelector('.person-edit-row:last-child [data-field="firstName"]');
+            input.scrollIntoView({ block: 'nearest' });
+            input.focus();
+            input.select();
+        }
+
+        personEditRows.addEventListener('change', (e) => {
+            const row = e.target.closest('.person-edit-row');
+            const field = e.target.dataset.field;
+            if (!row || !field) return;
+
+            const person = people[parseInt(row.dataset.index)];
+            const value = e.target.value.trim();
+
+            if (field === 'exclusions') {
+                person.exclusions = value.split(/[,;]/).map(x => x.trim()).filter(x => x);
+            } else {
+                if (field === 'firstName' && !value) {
+                    e.target.value = person.firstName;
+                    showToast('Der Vorname darf nicht leer sein', 'warning');
+                    return;
+                }
+
+                // Ausschlüsse, die auf den alten Namen zeigten, auf den neuen Namen umschreiben
+                const refs = findExclusionReferences(person);
+                person[field] = value;
+                updateDisplayNames();
+                const newRef = person.lastName ? `${person.firstName} ${person.lastName}` : person.displayName;
+                refs.forEach(({ other, idx }) => other.exclusions[idx] = newRef);
+
+                personEditRows.querySelectorAll('[data-field="exclusions"]').forEach(input => {
+                    if (input === document.activeElement) return;
+                    input.value = people[parseInt(input.closest('.person-edit-row').dataset.index)].exclusions.join(', ');
+                });
+            }
+
+            e.target.value = value;
+            afterPeopleEdited();
+        });
+
+        personEditRows.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-action="delete"]')) return;
+            const index = parseInt(e.target.closest('.person-edit-row').dataset.index);
+            const removed = people.splice(index, 1)[0];
+            updateDisplayNames();
+            renderPersonEditor();
+            afterPeopleEdited();
+            showToast(`${removed.displayName} entfernt`);
+        });
+
+        // Enter springt ins nächste Feld (wie in einer Tabelle)
+        personEditRows.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+            e.preventDefault();
+            const inputs = [...personEditRows.querySelectorAll('input')];
+            const next = inputs[inputs.indexOf(e.target) + 1];
+            if (next) {
+                next.focus();
+                next.select();
+            } else {
+                e.target.blur();
+                addPerson();
+            }
+        });
+
+        document.getElementById('editPeopleBtn').addEventListener('click', () => setEditMode(!editMode));
+        document.getElementById('finishEditBtn').addEventListener('click', () => setEditMode(false));
+        document.getElementById('addPersonBtn').addEventListener('click', addPerson);
+        document.getElementById('duplicateWarning').addEventListener('click', (e) => {
+            if (!e.target.closest('[data-action="edit"]')) return;
+            e.preventDefault();
+            setEditMode(true);
+            personEditRows.querySelector('.person-edit-row.duplicate input')?.focus();
+        });
+
+        document.getElementById('createEmptyList').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (people.length > 0 &&
+                !confirm('Neue leere Liste anlegen? Die aktuelle Liste bleibt unter "Listen verwalten" erhalten.')) return;
+
+            currentFileData = null;
+            parseData([]);
+            setEditMode(true);
+            addPerson();
+        });
 
         // Toggle person
         window.togglePerson = function (index) {
@@ -1751,6 +2038,11 @@
             const mode = document.querySelector('input[name="mode"]:checked').value;
             const value = parseInt(document.getElementById('distributionValue').value);
             const remainderMode = document.querySelector('input[name="restMode"]:checked').value;
+
+            if (!value || value < 1) {
+                showToast('Bitte eine Zahl ab 1 eingeben!', 'warning');
+                return;
+            }
 
             const personsForDistribution = activePeople.map((person, index) => ({
                 ...person,
@@ -1829,7 +2121,7 @@
             const container = document.getElementById('groupsContainer');
             container.innerHTML = groups.map((group, index) => {
                 const members = group.map(p => {
-                    return `<li class="group-member">${p.displayName}</li>`;
+                    return `<li class="group-member">${escapeHtml(p.displayName)}</li>`;
                 }).join('');
 
                 return `
@@ -1873,7 +2165,7 @@
 
             const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
             const filename = currentListName ?
-                `Gruppeneinteilung_${currentListName}_${timestamp}.xlsx` :
+                `Gruppeneinteilung_${displayListName(currentListName)}_${timestamp}.xlsx` :
                 `Gruppeneinteilung_${timestamp}.xlsx`;
 
             XLSX.writeFile(wb, filename);
@@ -1910,7 +2202,7 @@
                 // Add subtitle with list name and date
                 if (currentListName) {
                     const subtitle = document.createElement('div');
-                    subtitle.textContent = currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '');
+                    subtitle.textContent = displayListName(currentListName);
                     subtitle.style.cssText = 'color: #666; margin-bottom: 10px; text-align: center; font-size: 1.1em;';
                     exportContainer.appendChild(subtitle);
                 }
@@ -1956,7 +2248,7 @@
                     const a = document.createElement('a');
                     const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
                     const filename = currentListName ?
-                        `Gruppeneinteilung_${currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '')}_${timestamp}.png` :
+                        `Gruppeneinteilung_${displayListName(currentListName)}_${timestamp}.png` :
                         `Gruppeneinteilung_${timestamp}.png`;
                     a.href = url;
                     a.download = filename;
@@ -1991,7 +2283,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gruppeneinteilung${currentListName ? ' - ' + currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '') : ''}</title>
+    <title>Gruppeneinteilung${currentListName ? ' - ' + escapeHtml(displayListName(currentListName)) : ''}</title>
     <style>
         * {
             margin: 0;
@@ -2162,7 +2454,7 @@
 `;
 
             if (currentListName) {
-                html += `        <div class="subtitle">${currentListName.replace('[TEMP] ', '').replace('[SAVED] ', '')}</div>\n`;
+                html += `        <div class="subtitle">${escapeHtml(displayListName(currentListName))}</div>\n`;
             }
 
             html += `        <div class="date">${new Date().toLocaleString('de-DE')}</div>\n`;
@@ -2176,7 +2468,7 @@
                 html += `                    <span class="group-count">${group.length} ${group.length === 1 ? 'Person' : 'Personen'}</span>\n`;
                 html += `                </div>\n`;
                 group.forEach(person => {
-                    html += `                <div class="group-member">${person.displayName}</div>\n`;
+                    html += `                <div class="group-member">${escapeHtml(person.displayName)}</div>\n`;
                 });
                 html += `            </div>\n`;
             });
@@ -2233,7 +2525,7 @@
 
             const randomGroup = groups[Math.floor(Math.random() * groups.length)];
             const groupIndex = groups.indexOf(randomGroup) + 1;
-            const members = randomGroup.map(p => p.displayName).join(', ');
+            const members = escapeHtml(randomGroup.map(p => p.displayName).join(', '));
 
             const result = document.getElementById('randomResult');
             const content = document.getElementById('randomResultContent');
@@ -2287,15 +2579,7 @@
             lists[savedName] = {
                 people: people,
                 groups: groups,
-                settings: {
-                    colFirstName: document.getElementById('colFirstName')?.value || 0,
-                    colLastName: document.getElementById('colLastName')?.value || -1,
-                    colExclusions: document.getElementById('colExclusions')?.value || 1,
-                    skipFirstRow: document.getElementById('skipFirstRow')?.checked !== false,
-                    mode: document.querySelector('input[name="mode"]:checked')?.value || 'count',
-                    distributionValue: document.getElementById('distributionValue')?.value || 1,
-                    restMode: document.querySelector('input[name="restMode"]:checked')?.value || 'distribute'
-                },
+                settings: collectSettings(),
                 timestamp: new Date().toISOString(),
                 isTemp: false
             };
@@ -2304,7 +2588,7 @@
             currentListName = savedName;
             document.getElementById('listName').value = '';
 
-            localStorage.setItem('currentListName', savedName);
+            localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, savedName);
 
             loadSavedLists();
             updateFileDisplay();
@@ -2353,14 +2637,14 @@
 
                 return `
                     <div class="saved-list-item ${isActive ? 'active' : ''}">
-                        <span class="saved-list-name" onclick="loadList('${name.replace(/'/g, "\\'")}')">
-                            ${icon} ${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}
+                        <span class="saved-list-name" onclick="loadList('${jsAttr(name)}')">
+                            ${icon} ${escapeHtml(displayListName(name))}
                             ${tempBadge}
                             <div style="font-size: 0.75em; color: ${isActive ? 'white' : '#666'}; font-weight: normal;">
                                 ${personCount} Personen • ${date}
                             </div>
                         </span>
-                        <button class="delete-list-btn" onclick="deleteList('${name.replace(/'/g, "\\'")}')">🗑️</button>
+                        <button class="delete-list-btn" onclick="deleteList('${jsAttr(name)}')">🗑️</button>
                     </div>
                 `;
             }).join('');
@@ -2369,7 +2653,7 @@
         // Load specific list
         window.loadList = function (name, silent = false) {
             if (currentListName === name && !silent) {
-                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" ist bereits geladen`, 'info');
+                showToast(`Liste "${displayListName(name)}" ist bereits geladen`, 'info');
                 return;
             }
 
@@ -2377,7 +2661,7 @@
             const list = lists[name];
 
             if (!list) {
-                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wurde nicht gefunden`, 'error');
+                showToast(`Liste "${displayListName(name)}" wurde nicht gefunden`, 'error');
                 return;
             }
 
@@ -2388,21 +2672,10 @@
 
             localStorage.setItem(STORAGE_KEYS.CURRENT_LIST, name);
 
-            firstNameCount = {};
-            people.forEach(person => {
-                firstNameCount[person.firstName] = (firstNameCount[person.firstName] || 0) + 1;
-            });
-
-            people.forEach(person => {
-                if (firstNameCount[person.firstName] > 1 && person.lastName) {
-                    const lastNamePart = person.lastName.substring(0, 3);
-                    person.displayName = `${person.firstName} ${lastNamePart}.`;
-                } else {
-                    person.displayName = person.firstName;
-                }
-            });
+            updateDisplayNames();
 
             groups = list.groups || [];
+            syncGroupsWithPeople(false);
 
             if (list.settings) {
                 const colFirstNameEl = document.getElementById('colFirstName');
@@ -2463,13 +2736,13 @@
             saveState();
 
             if (!silent) {
-                showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" geladen!`);
+                showToast(`Liste "${displayListName(name)}" geladen!`);
             }
         };
 
         // Delete list
         window.deleteList = function (name) {
-            if (!confirm(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" wirklich löschen?`)) return;
+            if (!confirm(`Liste "${displayListName(name)}" wirklich löschen?`)) return;
 
             const lists = JSON.parse(localStorage.getItem('savedLists') || '{}');
             delete lists[name];
@@ -2497,7 +2770,7 @@
             }
 
             loadSavedLists();
-            showToast(`Liste "${name.replace('[TEMP] ', '').replace('[SAVED] ', '')}" gelöscht`);
+            showToast(`Liste "${displayListName(name)}" gelöscht`);
         };
 
         // Download example file

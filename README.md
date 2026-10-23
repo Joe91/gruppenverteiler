@@ -10,6 +10,7 @@ Link: https://joe91.github.io/gruppenverteiler
 - **Flexible Aufteilungsmodi**: Aufteilung nach Anzahl der Gruppen oder nach Gruppengröße
 - **Ausschlussmanagement**: Ausschlüsse für einzelne Personen-Kombinationen können angegeben werden
 - **Interaktive Personenverwaltung**: Einzelne Personen können mit Checkbox ausgeschlossen werden
+- **Liste im Browser bearbeiten**: Namen und Ausschlüsse direkt ändern, Personen hinzufügen oder entfernen – auch ganz ohne Datei
 - **Listen-Verwaltung**: Häufig benötigte Datenlisten können gespeichert und wiedergeladen werden
 - **Browser-Speicher**: Alle Daten werden lokal im Browser gespeichert – keine Serverübertragung notwendig
 - **Offline-Funktionalität**: Volle Funktionalität auch ohne Internetverbindung
@@ -43,6 +44,7 @@ In der Anwendung können folgende Spaltenindizes konfiguriert werden (0-basiert,
   - Die Spalte mit den Nachnamen der Personen
   - Optional; wenn gesetzt, wird der Nachname bei der Anzeige berücksichtigt
   - Wenn mehrere Personen denselben Vornamen haben, wird der Nachname (gekürzt auf 3 Buchstaben) zur Unterscheidung hinzugefügt
+  - Reichen 3 Buchstaben nicht (z.B. Müller/Müllner), wird der volle Nachname angezeigt; bei komplett gleichen Namen wird nummeriert: `Anna (1)`, `Anna (2)`
 
 - **Spalte: Ausschlüsse** (Standard: 1)
   - Die Spalte mit den Ausschlüssen
@@ -144,6 +146,20 @@ Nach dem Datei-Upload wird eine Liste aller Personen angezeigt:
 - Die ausgeschlossenen Personen werden durchgestrichen angezeigt
 - Der Status zeigt: Gesamt | Aktiv | Ignoriert
 - Nur aktive Personen werden in die Gruppen eingeteilt
+- Haben mehrere Personen denselben Namen, erscheint ein Hinweis mit Link zum Bearbeiten
+
+### ✏️ Liste bearbeiten
+
+Über **„Liste bearbeiten“** wird die Personenliste zu einer editierbaren Tabelle (Vorname, Nachname, Ausschlüsse):
+
+- **Gleiche Namen unterscheiden**: Doppelte Namen sind orange markiert – einfach einen Nachnamen ergänzen
+- **Umbenennen**: Ausschlüsse anderer Personen, die eindeutig auf den alten Namen verweisen, werden automatisch angepasst
+- **Ausschlüsse**: Komma-getrennt eintragen; Einträge, die zu keiner Person passen, werden orange markiert (Details per Mouseover)
+- **Hinzufügen / Entfernen**: „➕ Person hinzufügen“ bzw. 🗑️; **Enter** springt ins nächste Feld, im letzten Feld wird eine neue Person angelegt
+- Eine bestehende Gruppeneinteilung wird sofort aktualisiert (geänderte Namen, entfernte Personen)
+- Alle Änderungen werden automatisch in der aktuellen Liste gespeichert
+
+Mit **„oder Liste ohne Datei erstellen“** unter dem Upload-Feld lässt sich eine Liste komplett von Hand eingeben.
 
 ## 📊 Export und Verwendung
 
